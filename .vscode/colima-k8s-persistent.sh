@@ -20,6 +20,8 @@ fi
 # Use K8S_POD_STORAGE_PATH from .env, expand ~ to home if present
 if [[ -z "$K8S_POD_STORAGE_PATH" ]]; then
   echo "K8S_POD_STORAGE_PATH is not set. Please set it in your .env file."
+  echo "K8S_POD_STORAGE_PATH is not set."
+  echo "Please copy .env.example to .env in the project root and set the required values."
   exit 1
 fi
 if [[ "$K8S_POD_STORAGE_PATH" == ~* ]]; then
