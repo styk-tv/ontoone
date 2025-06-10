@@ -8,8 +8,25 @@ if [ -f "$LOGFILE" ]; then
     mv "$LOGFILE" "$LOGFILE.bak"
 fi
 
+# Load .env from workspace root if present
+ENV_PATH="$(cd "$(dirname "$0")/.." && pwd)/.env"
+if [ -f "$ENV_PATH" ]; then
+  set -a
+  source "$ENV_PATH"
+  set +a
+fi
+
 # Define your host path for the shared storage
-HOST_COMPOSE_PATH="/Users/neoxr/git_ontosys/compose-k8s-storage"
+# Use K8S_POD_STORAGE_PATH from .env, expand ~ to home if present
+if [[ -z "$K8S_POD_STORAGE_PATH" ]]; then
+  echo "K8S_POD_STORAGE_PATH is not set. Please set it in your .env file."
+  exit 1
+fi
+if [[ "$K8S_POD_STORAGE_PATH" == ~* ]]; then
+  HOST_COMPOSE_PATH="${K8S_POD_STORAGE_PATH/#\~/$HOME}"
+else
+  HOST_COMPOSE_PATH="$K8S_POD_STORAGE_PATH"
+fi
 VM_COMPOSE_PATH="/compose" # This is where it will appear inside the Colima VM
 
 # Graceful shutdown handler
