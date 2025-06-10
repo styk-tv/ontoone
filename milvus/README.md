@@ -21,6 +21,41 @@ This folder contains the Helm chart and configuration for the Milvus vector data
 
 1. Use the Task Manager extension in VSCode to launch the "21 milvus.onto.one" task to deploy Milvus.
 2. Use the "22 milvus.onto.one EXEC" task to open a shell in the running Milvus pod for troubleshooting or direct interaction.
+## values.yaml
+
+```yaml
+nameOverride: ""
+fullnameOverride: ""
+cluster:
+  enabled: false
+image:
+  all:
+    repository: milvusdb/milvus
+    tag: v2.5.12
+    pullPolicy: IfNotPresent
+  tools:
+    repository: milvusdb/milvus-config-tool
+    tag: v0.1.2
+    pullPolicy: IfNotPresent
+extraEnv: []
+proxy:
+  enabled: true
+  replicas: 1
+  extraEnv: []
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: milvus.onto.one
+      path: "/"
+      pathType: Prefix
+  tls:
+    - secretName: wildcard-onto-one
+      hosts:
+        - milvus.onto.one
+```
 ---
 
 **Breadcrumb:** [Home (../README.md)](../README.md) > [TASKS](../TASKS.md) > [PROJECTS](../PROJECTS.md) > milvus
