@@ -1,0 +1,65 @@
+# Cyber K8s Scene Configuration
+# Each scene defines a screen, its timing, and the kubernetes commands to fetch its data.
+# - drawing_duration: time to draw all characters for the screen (seconds)
+# - pause_duration: pause after drawing (seconds, optional, overrides global)
+# - font: figlet font to use for the header (optional)
+# - commands: list of bash oneliners to fetch data for this screen
+# - message: for slides that are just a message (no commands)
+
+global:
+  drawing_duration: 4.0
+  pause_duration: 5.0
+
+scenes:
+  - name: "Title Credits"
+    drawing_duration: 3.0
+    pause_duration: 2.0
+    font: "Cricket"
+    message: "Cyber K8s Monitor (c) 2025 Peter Styk Apache 2.0"
+  - name: "Cluster Info & Resource"
+    drawing_duration: 7.0
+    pause_duration: 2.0
+    font: "Crawford2"
+    commands:
+      - "kubectl cluster-info"
+      - "kubectl get nodes -o wide"
+      - "kubectl top nodes"
+  - name: "Nodes & Services"
+    drawing_duration: 6.0
+    font: "ANSI Regular"
+    commands:
+      - "kubectl get nodes -o wide"
+      - "kubectl get svc -A"
+  - name: "Pods & Ingress"
+    drawing_duration: 7.0
+    font: "ANSI Shadow"
+    commands:
+      - "kubectl get pods -A -o wide"
+      - "kubectl get ing -A"
+  - name: "Services Only"
+    drawing_duration: 4.0
+    font: "miniwi"
+    commands:
+      - "kubectl get svc -A"
+  - name: "Colima Status"
+    drawing_duration: 5.0
+    font: "Poison"
+    commands:
+      - "colima status k8s"
+      - "kubectl get nodes -o wide"
+  - name: "Active Pods"
+    drawing_duration: 5.0
+    font: "Stick Letters"
+    commands:
+      - "kubectl get pods -A -o wide --field-selector=status.phase=Running"
+  - name: "Resource Usage"
+    drawing_duration: 4.0
+    font: "ANSI Regular"
+    commands:
+      - "kubectl top nodes"
+      - "kubectl top pods -A"
+  - name: "Ingress Status"
+    drawing_duration: 4.0
+    font: "Cricket"
+    commands:
+      - "kubectl get ing -A"

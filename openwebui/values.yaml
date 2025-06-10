@@ -1,0 +1,139 @@
+ingress:
+  enabled: true
+  class: ""
+  annotations: {}
+  host: openwebui.onto.one
+  additionalHosts: []
+  tls: true
+  existingSecret: wildcard-onto-one
+  extraLabels: {}
+
+websocket:
+  # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
+  enabled: true
+  # -- Specifies the websocket manager to use with env `WEBSOCKET_MANAGER`: redis (default)
+  manager: redis
+  # -- Specifies the URL of the Redis instance for websocket communication. Template with `redis://[:<password>@]<hostname>:<port>/<db>`
+  url: redis://open-webui-redis:6379/0
+  # -- Node selector for websocket pods
+  nodeSelector: {}
+  # -- Deploys a redis
+  redis:
+    # -- Enable redis installation
+    enabled: true
+    # -- Redis name
+    name: open-webui-redis
+    # -- Redis labels
+    labels: {}
+    # -- Redis annotations
+    annotations: {}
+    # -- Redis pod
+    pods:
+      # -- Redis pod labels
+      labels: {}
+      # -- Redis pod annotations
+      annotations: {}
+    # -- Redis image
+    image:
+      repository: redis
+      tag: 7.4.2-alpine3.21
+      pullPolicy: IfNotPresent
+    # -- Redis command (overrides default)
+    command: []
+    # -- Redis arguments (overrides default)
+    args: []
+    # -- Redis resources
+    resources: {}
+    # -- Redis service
+    service:
+      # -- Redis container/target port
+      containerPort: 6379
+      # -- Redis service type
+      type: ClusterIP
+      # -- Redis service labels
+      labels: {}
+      # -- Redis service annotations
+      annotations: {}
+      # -- Redis service port
+      port: 6379
+      # -- Redis service node port. Valid only when type is `NodePort`
+      nodePort: ""
+    # -- Redis tolerations for pod assignment
+    tolerations: []
+
+    # -- Redis affinity for pod assignment
+    affinity: {}
+
+    # -- Redis security context
+    securityContext:
+      {}
+      # runAsUser: 999
+      # runAsGroup: 1000  
+
+extraEnvVars:
+  # -- Default API key value for Pipelines. Should be updated in a production deployment, or be changed to the required API key if not using Pipelines
+  - name: OPENAI_API_KEY
+    value: "sk-openai-api-key"
+  - name: OPENAI_API_BASE_URLS
+    value: "http://litellm.litellm:4000"    
+  - name: DEFAULT_MODELS
+    value: "gpt-4.1"
+  - name: MILVUS_URI
+    value: "http://milvus.milvus:19530"
+  - name: MILVUS_TOKEN
+    value: ""
+  - name: MILVUS_DB
+    value: "default"
+  - name: VECTOR_DB
+    value: "milvus"
+
+  # # Milvus integration
+  # - name: API_KEY_OPENAI_AZURE
+  #   value: "private"    
+  # - name: OPENAI_AZURE_ENDPOINT
+  #   value: "https://peter-1239-resource.openai.azure.com/"    
+  # - name: OPENAI_API_KEY
+  #   value: "CLFfR6wo6pJuavZ4NfjabQEfqr3wRMCJVxpuDGl4R0ETJSikHjVcJQQJ99BEACfhMk5XJ3w3AAAAACOGOFKT"
+  # - name: OPENAI_API_VERSION
+  #   value: "2024-12-01-preview"
+  # - name: OPENAI_API_TYPE
+  #   value: "azure"
+  # - name: OPENAI_AZURE_ENDPOINT
+  #   value: "https://peter-1239-resource.cognitiveservices.azure.com/openai/deployments/gpt-4.1/chat/completions?api-version=2025-01-01-preview"  
+
+
+
+
+pipelines:
+  enabled: true
+  extraEnvVars: []
+
+# --- Persistence for Open WebUI main container
+persistence:
+  enabled: false
+
+volumes:
+  - name: app-root
+    hostPath:
+      path: /compose/openwebui-openwebui
+      type: DirectoryOrCreate
+
+volumeMounts:
+  mainContainer:
+    - name: app-root
+      mountPath: /app
+  initContainer: []
+
+pipelines:
+  persistence:
+    enabled: false
+  volumes:
+    - name: pipelines-root
+      hostPath:
+        path: /compose/openwebui_pipelines
+        type: DirectoryOrCreate
+  volumeMounts:
+    mainContainer:
+      - name: pipelines-root
+        mountPath: /app/pipelines
+    initContainer: []

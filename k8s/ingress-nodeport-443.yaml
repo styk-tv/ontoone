@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nodeport-443
+  namespace: agent-zero
+spec:
+  type: NodePort
+  ports:
+    - name: https
+      port: 443
+      targetPort: 80
+      nodePort: 443
+  selector:
+    app: agentzero
+---
+# NOTE: Some Kubernetes distributions do not allow NodePort below 30000 by default.
+# You may need to enable a privileged range or override the default NodePort range in Colima,
+# or run port forwarding from host port 443 to NodePort if direct usage is not permitted.

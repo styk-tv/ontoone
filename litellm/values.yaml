@@ -1,0 +1,28 @@
+proxy_config:
+  model_list:
+    - model_name: gpt-4.1
+      litellm_params:
+        model: azure/gpt-4.1
+        api_base: "https://peter-8888-resource.cognitiveservices.azure.com/"
+        api_key: ""
+        api_version: "2024-12-01-preview"
+
+ingress:
+  enabled: true
+  hosts:
+    - host: litellm.onto.one
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - litellm.onto.one
+      secretName: wildcard-onto-one
+
+extraEnv:
+  - name: LITELLM_MASTER_KEY
+    value: ""
+  - name: UI_USERNAME
+    value: ""
+  - name: UI_PASSWORD
+    value: ""

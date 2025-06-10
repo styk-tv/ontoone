@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mcpo
+version: 0.1.0
+description: Custom Helm chart for mcpo
+appVersion: "1.16.0"
+type: application

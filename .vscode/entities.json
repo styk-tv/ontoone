@@ -1,0 +1,53 @@
+{
+  "entities": [
+    {
+      "name": "Cricket.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a playful, rounded style. Good for fun or less formal section headers."
+      ]
+    },
+    {
+      "name": "Crawford2.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a bold, geometric look. Suitable for strong, attention-grabbing headers."
+      ]
+    },
+    {
+      "name": "ANSI Regular.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a blocky, digital style. Good for technical or status screens."
+      ]
+    },
+    {
+      "name": "ANSI Shadow.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a shadowed, 3D effect. Useful for dramatic or highlighted sections."
+      ]
+    },
+    {
+      "name": "miniwi.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a compact, minimalist style. Ideal for small headers or side-by-side art."
+      ]
+    },
+    {
+      "name": "Poison.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a dripping, stylized effect. Great for warnings, errors, or 'danger' sections."
+      ]
+    },
+    {
+      "name": "Stick Letters.flf",
+      "entityType": "figlet_font",
+      "observations": [
+        "A figlet font with a stick-figure, outlined look. Good for playful or schematic headers."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,438 @@
+nameOverride: ""
+fullnameOverride: ""
+cluster:
+  enabled: false
+image:
+  all:
+    repository: milvusdb/milvus
+    tag: v2.5.12
+    pullPolicy: IfNotPresent
+  tools:
+    repository: milvusdb/milvus-config-tool
+    tag: v0.1.2
+    pullPolicy: IfNotPresent
+nodeSelector: {}
+tolerations: []
+affinity: {}
+securityContext: {}
+topologySpreadConstraints: []
+labels: {}
+annotations: {}
+volumes: []
+volumeMounts: []
+streaming:
+  enabled: false
+customConfigMap: ""
+extraConfigFiles:
+  user.yaml: |
+    proxy:
+      http:
+        enabled: true
+service:
+  type: ClusterIP
+  port: 19530
+  portName: milvus
+  nodePort: ""
+  annotations: {}
+  labels: {}
+  externalIPs: []
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+    nginx.ingress.kubernetes.io/listen-ports-ssl: '[19530]'
+    nginx.ingress.kubernetes.io/proxy-body-size: 4m
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  labels: {}
+  rules:
+    - host: milvus.onto.one
+      path: "/"
+      pathType: Prefix
+  tls:
+    - secretName: wildcard-onto-one
+      hosts:
+        - milvus.onto.one
+serviceAccount:
+  create: false
+  name:
+  annotations:
+  labels:
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 5
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 90
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 5
+log:
+  level: "info"
+  file:
+    maxSize: 300
+    maxAge: 10
+    maxBackups: 20
+  format: "text"
+  persistence:
+    enabled: false
+heaptrack:
+  image:
+    repository: milvusdb/heaptrack
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+standalone:
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  disk:
+    enabled: true
+    size:
+      enabled: false
+  profiling:
+    enabled: false
+  messageQueue: rocksmq
+  persistence:
+    mountPath: "/var/lib/milvus"
+    enabled: true
+    annotations:
+      helm.sh/resource-policy: keep
+    persistentVolumeClaim:
+      existingClaim: ""
+      storageClass:
+      accessModes: ReadWriteOnce
+      size: 50Gi
+      subPath: ""
+proxy:
+  enabled: true
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  http:
+    enabled: true
+    debugMode:
+      enabled: false
+  tls:
+    enabled: false
+  strategy: {}
+  annotations: {}
+  hpa:
+    enabled: false
+rootCoordinator:
+  enabled: false
+  replicas: 1
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  activeStandby:
+    enabled: false
+  service:
+    port: 53100
+    annotations: {}
+    labels: {}
+    clusterIP: ""
+queryCoordinator:
+  enabled: false
+  replicas: 1
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  activeStandby:
+    enabled: false
+  service:
+    port: 19531
+    annotations: {}
+    labels: {}
+    clusterIP: ""
+queryNode:
+  enabled: true
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  disk:
+    enabled: true
+    size:
+      enabled: false
+  profiling:
+    enabled: false
+  strategy: {}
+  annotations: {}
+  hpa:
+    enabled: false
+indexCoordinator:
+  enabled: false
+  replicas: 1
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  activeStandby:
+    enabled: false
+  service:
+    port: 31000
+    annotations: {}
+    labels: {}
+    clusterIP: ""
+indexNode:
+  enabled: true
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  disk:
+    enabled: true
+    size:
+      enabled: false
+  strategy: {}
+  annotations: {}
+  hpa:
+    enabled: false
+dataCoordinator:
+  enabled: false
+  replicas: 1
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  activeStandby:
+    enabled: false
+  strategy: {}
+  annotations: {}
+  service:
+    port: 13333
+    annotations: {}
+    labels: {}
+    clusterIP: ""
+dataNode:
+  enabled: true
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  strategy: {}
+  annotations: {}
+  hpa:
+    enabled: false
+mixCoordinator:
+  enabled: true
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  topologySpreadConstraints: []
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  activeStandby:
+    enabled: false
+  strategy: {}
+  annotations: {}
+  service:
+    annotations: {}
+    labels: {}
+    clusterIP: ""
+streamingNode:
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  extraEnv: []
+  heaptrack:
+    enabled: false
+  profiling:
+    enabled: false
+  strategy: {}
+attu:
+  enabled: true
+  name: attu
+  image:
+    repository: zilliz/attu
+    tag: v2.5.3
+    pullPolicy: IfNotPresent
+  service:
+    annotations: {}
+    labels: {}
+    type: ClusterIP
+    port: 3000
+  resources: {}
+  securityContext: {}
+  podLabels: {}
+  annotations: {}
+  ingress:
+    enabled: true
+    ingressClassName: ""
+    annotations: {}
+    labels: {}
+    hosts:
+      - attu.onto.one
+    tls:
+      - secretName: wildcard-onto-one
+        hosts:
+          - attu.onto.one
+minio:
+  enabled: true
+  name: minio
+  mode: standalone
+  image:
+    tag: "RELEASE.2023-03-20T20-16-18Z"
+    pullPolicy: IfNotPresent
+  accessKey: minioadmin
+  secretKey: minioadmin
+  existingSecret: ""
+  bucketName: "milvus-bucket"
+  rootPath: file
+  useIAM: false
+  iamEndpoint: ""
+  region: ""
+  useVirtualHost: false
+  podDisruptionBudget:
+    enabled: false
+  resources:
+    requests:
+      memory: 2Gi
+  service:
+    type: ClusterIP
+    port: 9000
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass:
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    subPath: ""
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 5
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 5
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 60
+etcd:
+  enabled: true
+  name: etcd
+  replicaCount: 1
+  pdb:
+    create: false
+  image:
+    repository: "milvusdb/etcd"
+    tag: "3.5.18-r1"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 2379
+    peerPort: 2380
+  auth:
+    rbac:
+      enabled: false
+  persistence:
+    enabled: true
+    storageClass:
+    accessMode: ReadWriteOnce
+    size: 10Gi
+  livenessProbe:
+    enabled: true
+    timeoutSeconds: 10
+  readinessProbe:
+    enabled: true
+    periodSeconds: 20
+    timeoutSeconds: 10
+  autoCompactionMode: revision
+  autoCompactionRetention: "1000"
+  extraEnvVars:
+  - name: ETCD_QUOTA_BACKEND_BYTES
+    value: "4294967296"
+  - name: ETCD_HEARTBEAT_INTERVAL
+    value: "500"
+  - name: ETCD_ELECTION_TIMEOUT
+    value: "2500"
+pulsarv3:
+  enabled: false
+pulsar:
+  enabled: false
+kafka:
+  enabled: false
+woodpecker:
+  enabled: false
+externalS3:
+  enabled: false
+externalGcs:
+  bucketName: ""
+externalEtcd:
+  enabled: false
+externalPulsar:
+  enabled: false
+externalKafka:
+  enabled: false
+tei:
+  enabled: false

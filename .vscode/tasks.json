@@ -1,0 +1,112 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "01 COLIMA [KUBERNETES] - PERSISTENT",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/colima-k8s-persistent.sh",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      },
+      "group": "build"
+    },
+    {
+      "label": "02 COLIMA EXEC",
+      "type": "shell",
+      "command": "ssh colima-k8s",
+      "problemMatcher": []
+    },    
+    {
+      "label": "03 CYBER K8S MONITOR",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/cyber-k8s-logstream.py /tmp/colima-k8s-persistent.log",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      },
+      "group": "build"
+    }, 
+    {
+      "label": "11 litellm.onto.one",
+      "type": "shell",
+      "command": "sh ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
+      "problemMatcher": []
+    },
+    {
+      "label": "12 litellm.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}') -n litellm -- /bin/sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "21 milvus.onto.one",
+      "type": "shell",
+      "command": "sh ./k8s/start_chart.sh milvus https://zilliztech.github.io/milvus-helm/ milvus 4.1.15",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      }
+    },
+    {
+      "label": "22 milvus.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it  -n milvus -- /bin/sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "31 openwebui.onto.one",
+      "type": "shell",
+      "command": "sh ./k8s/start_chart.sh openwebui https://helm.openwebui.com open-webui 6.19.0",
+      "problemMatcher": []
+    },
+    {
+      "label": "32 openwebui.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n openwebui -l app.kubernetes.io/component=open-webui -o jsonpath='{.items[0].metadata.name}') -n openwebui -- /bin/bash",
+      "problemMatcher": []
+    },
+    {
+      "label": "33 mcpo.onto.one",
+      "type": "shell",
+      "command": "sh ./k8s/start_chart.sh mcpo",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      }
+    },
+    {
+      "label": "91 swiss.onto.one",
+      "type": "shell",
+      "command": "sh ./k8s/start_chart.sh swiss",
+      "problemMatcher": []
+    },
+    {
+      "label": "92 swiss.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n swiss -l app=swiss -o jsonpath='{.items[0].metadata.name}') -n swiss -- /bin/bash",
+      "problemMatcher": []
+    }    
+  ]
+}

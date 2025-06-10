@@ -1,0 +1,23 @@
+replicaCount: 1
+
+image:
+  repository: leodotcloud/swiss-army-knife
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+  requests:
+    cpu: "0.5"
+    memory: "256Mi"
+
+env: []
+
+ingress:
+  enabled: true
+  hosts:
+    - host: swiss.onto.one
+  tls:
+    - secretName: wildcard-onto-one
