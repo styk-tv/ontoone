@@ -1,14 +1,26 @@
 # Cyber K8s Launcher
 
-This project enables rapid experimentation with self-hosted projects on your laptop, using a disposable Kubernetes environment mapped to your workstation. All services are accessible via valid SSL certificates and fully qualified domain names (FQDNs), but everything still points to `127.0.0.1` for local development.
+<p align="center">
+  <img src=".vscode/img/image1.png" alt="Cyber K8s Launcher" width="600"/>
+</p>
+
+**The fastest way to run your own AI stack—on your laptop, with real SSL, real domains, and real power.**
+
+1. **Load VSCode**
+2. **Add the Task Manager extension**
+3. **Clone this repo**
+4. **Click "Start" (get instant Kubernetes)**
+5. **Click, click, click—OpenWebUI, Milvus for blazing-fast vector storage, all streaming through LiteLLM for full model and token control.**
+6. **MCPO for orchestration.**
+7. **Coming soon: AgentZero—the last agent automation you'll ever need. Absolutely mind-blowing.**
+
+No Docker Desktop. No cloud. No waiting.
+Just you, your laptop, and a full-featured, self-hosted AI playground—up and running in seconds.
 
 - **First button:** Starts Colima Kubernetes (Task 01).
 - **Other buttons:** Instantly deploy Helm charts for your chosen projects. When you stop a task, the Helm chart is uninstalled and resources are freed.
 - **Persistence:** All work is stored on your workstation, so data is preserved between sessions.
 - **Resilience:** The system is designed for eventual consistency and can recover from interruptions or shutdowns. For critical data, use backups, but for day-to-day playground use, this is ideal.
-
-> _"Sharing this with the world as a rapid, resilient playground for self-hosted experimentation."_  
-> — Peter
 
 ---
 
