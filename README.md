@@ -49,12 +49,68 @@ _Use the VSCode Task Manager extension to launch these tasks. EXEC tasks (shell 
   - Extension: **Task Manager** (`cnshenj.vscode-task-manager`)
 
 ---
+## 2. Quick Installation
 
-## 2. Colima Setup
+**Install all required tools and dependencies:**
+```sh
+# Core tools: Colima (Kubernetes VM), mkcert (local SSL), guest agents (optional), Python deps for helper scripts
+brew install colima mkcert lima-additional-guestagents
+mkcert -install
+pip install -r .vscode/requirements.txt
+```
+- **Colima**: Local Kubernetes cluster using macOS virtualization.
+- **mkcert**: Instantly generates trusted SSL certificates for local domains.
+- **lima-additional-guestagents**: (Optional) Suppresses Colima guest agent warnings.
+- **Python requirements**: Needed for VSCode helper scripts.
 
-Colima supports two modes:
-- **Container mode** (default, like Docker Desktop)
-- **Kubernetes mode** (used in this project)
+**Generate a wildcard certificate for your local domain (output to `k8s/`):**
+```sh
+cd k8s && mkcert "*.onto.one" onto.one
+```
+This creates a `.pem` certificate and a `-key.pem` private key in the `k8s/` directory for your local services.
+
+**Environment configuration:**
+- New users should copy `.env.example` to `.env` in the root of the repository:
+  ```sh
+  cp .env.example .env
+  ```
+- Edit `.env` to set your personal secrets and configuration options. This file is ignored by git and is unique to your setup.
+**Configure your environment:**
+Edit `.env` to set the container runtime and memory:
+```sh
+# Options: "containerd" (default, uses nerdctl), "docker" (uses Docker if installed)
+COLIMA_RUNTIME=containerd
+# Suggestions: 8 (safe for most), 16 (for more workloads), 48 (only if you have >64GB RAM)
+COLIMA_MEMORY=8
+```
+
+**Kubeconfig setup:**
+- The kubeconfig is automatically extracted on first Colima start.
+- To refresh manually:
+  ```sh
+  colima ssh --profile k8s -- cat /etc/rancher/k3s/k3s.yaml > ~/.kube/config
+  ```
+
+**After setup:**  
+Use the VSCode Task Manager extension to start Colima and deploy your AI stack with one click.
+
+---
+
+
+## 2. Quick Installation
+
+Colima supports two container runtimes:
+- **containerd** (default, uses `nerdctl` CLI)
+- **docker** (uses Docker if installed)
+
+**By default, this project uses `containerd` with the `nerdctl` CLI for container management.**
+- If you already have Docker installed and prefer to use it, set `COLIMA_RUNTIME=docker` in your `.env` file.
+- If you use the default (`containerd`), you will use `nerdctl` commands (e.g., `nerdctl ps`, `nerdctl images`). For convenience, you can alias `docker` to `nerdctl` in your shell:
+  ```sh
+  alias docker='nerdctl'
+  alias docker-compose='nerdctl compose'
+  ```
+- Most Docker CLI commands are compatible with `nerdctl`, but some advanced features may differ.
 
 **We use Kubernetes mode.**
 
@@ -62,6 +118,18 @@ Colima supports two modes:
 
 ```sh
 brew install colima
+```
+
+### Configure Runtime (Optional)
+
+Edit your `.env` file to set the container runtime:
+```sh
+# Options: "containerd" (default, uses nerdctl), "docker" (uses Docker if installed)
+COLIMA_RUNTIME=containerd
+```
+If you have Docker installed and want to use it, set:
+```sh
+COLIMA_RUNTIME=docker
 ```
 
 ---

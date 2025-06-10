@@ -16,6 +16,8 @@ if [ -f "$ENV_PATH" ]; then
   set +a
 fi
 
+echo "Colima runtime: ${COLIMA_RUNTIME:-containerd}"
+
 # Define your host path for the shared storage
 # Use K8S_POD_STORAGE_PATH from .env, expand ~ to home if present
 if [[ -z "$K8S_POD_STORAGE_PATH" ]]; then
@@ -122,7 +124,10 @@ display_access_info() {
 # Check if Colima k8s profile is running
 if ! colima status k8s &>/dev/null; then
     echo 'Starting Colima k8s profile with network address and Kubernetes...'
-    
+    echo 'NOTE: Initial cluster creation may take several minutes, especially on first run.'
+    echo 'No workloads or applications are preinstalled—this is a clean Kubernetes environment.'
+    echo 'You will see status updates as each component becomes ready.'
+
     # Ensure the host directory exists before starting Colima
     mkdir -p "$HOST_COMPOSE_PATH"
     echo "Ensured host directory exists: $HOST_COMPOSE_PATH"
@@ -130,8 +135,9 @@ if ! colima status k8s &>/dev/null; then
     # Start Colima with network-address flag for direct IP access and Kubernetes enabled
     colima start -p 50001:50001 -p 55080:55080 -p 55022:55022 \
         --profile k8s \
+        --runtime "${COLIMA_RUNTIME:-containerd}" \
         --cpu 8 \
-        --memory 48 \
+        --memory "${COLIMA_MEMORY:-8}" \
         --disk 100 \
         --mount-type virtiofs \
         --vm-type=vz \
@@ -152,6 +158,8 @@ if ! colima status k8s &>/dev/null; then
     
 else
     echo 'Colima k8s profile already running'
+    echo 'No workloads or applications are preinstalled—this is a clean Kubernetes environment.'
+    echo 'You will see status updates as each component becomes ready.'
 fi
 
 # Ensure kubeconfig is properly set up
@@ -161,11 +169,16 @@ ensure_kubeconfig
 echo 'Waiting for Kubernetes to be ready...'
 kubectl wait --for=condition=Ready nodes --all --timeout=300s
 
+echo 'Kubernetes is ready. Installing ingress controller (NGINX) for external access to services...'
+
 # Setup ingress controller
 setup_ingress_controller
 
 # Display access information
 display_access_info
+
+echo 'Setup complete. You can now deploy workloads using Helm charts or kubectl.'
+echo 'For example, use the provided VSCode tasks to deploy services like Litellm, Milvus, OpenWebUI, MCPO, or Swiss.'
 
 # Enhanced monitoring loop
 while true; do

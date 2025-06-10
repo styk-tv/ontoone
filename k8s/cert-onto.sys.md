@@ -5,5 +5,6 @@ brew install mkcert
 mkcert -install
 
 # Generate wildcard certificate
+
 mkcert "*.onto.one" onto.one
 
