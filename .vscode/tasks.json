@@ -15,14 +15,20 @@
         "showReuseMessage": false,
         "close": false
       },
-      "group": "build"
+      "group": "build",
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "02 COLIMA EXEC",
       "type": "shell",
       "command": "ssh colima-k8s",
-      "problemMatcher": []
-    },    
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
+    },
     {
       "label": "03 CYBER K8S MONITOR",
       "type": "shell",
@@ -37,19 +43,28 @@
         "showReuseMessage": false,
         "close": false
       },
-      "group": "build"
-    }, 
+      "group": "build",
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
+    },
     {
       "label": "11 litellm.onto.one",
       "type": "shell",
       "command": "sh ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "12 litellm.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}') -n litellm -- /bin/sh",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "21 milvus.onto.one",
@@ -63,25 +78,37 @@
         "panel": "dedicated",
         "showReuseMessage": false,
         "close": false
+      },
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
       }
     },
     {
       "label": "22 milvus.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it  -n milvus -- /bin/sh",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "31 openwebui.onto.one",
       "type": "shell",
       "command": "sh ./k8s/start_chart.sh openwebui https://helm.openwebui.com open-webui 6.19.0",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "32 openwebui.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n openwebui -l app.kubernetes.io/component=open-webui -o jsonpath='{.items[0].metadata.name}') -n openwebui -- /bin/bash",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
     },
     {
       "label": "33 mcpo.onto.one",
@@ -94,6 +121,9 @@
         "panel": "dedicated",
         "showReuseMessage": false,
         "close": false
+      },
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
       }
     },
     {
