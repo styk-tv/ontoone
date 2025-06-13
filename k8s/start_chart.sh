@@ -55,6 +55,10 @@ if [ "$PROJECT_NAME" != "litellm" ]; then
   exit 1
 fi
 
+# Ensure wildcard TLS certificate secret exists in the litellm namespace before deploying
+echo "[INFO] Creating/refreshing wildcard TLS certificate secret in the litellm namespace..."
+"$SCRIPT_DIR/install-wildcard.sh" litellm
+
 echo "[INFO] Applying Helmfile with dynamic .env → pod env mapping for '$PROJECT_NAME'..."
 helmfile -f ./litellm/helmfile.yaml.gotmpl sync
 
@@ -82,21 +86,100 @@ while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n litellm "$POD" -o jsonpath='{.
     break
   fi
 done
-if [[ -n "$POD" ]]; then
-  for key in AZURE_API_BASE AZURE_API_KEY AZURE_API_VERSION PROXY_MASTER_KEY HOST PORT; do
-    value=$(kubectl exec -n litellm "$POD" -- printenv "$key" 2>/dev/null || echo "")
-    # Obfuscate anything with 'KEY' in the variable name (show XXX****)
-    if [[ "$key" == *KEY* ]]; then
-      if [ -z "$value" ]; then
-        obf=""
-      else
-        obf="${value:0:3}******"
+cleanup() {
+  echo
+  echo "[INFO] Received exit signal, displaying Kubernetes resource status for troubleshooting..."
+  echo
+  echo "[INFO] Entering resource monitoring for namespace 'litellm': will exit only when all resources are gone."
+  while true; do
+    OUT=$(kubectl get all,ing,pv,pvc,cm -n litellm 2>&1)
+    echo "$OUT"
+    # Check for presence of any resources (not just 'No resources found', but also body of tables)
+    # If every section shows "No resources found" (or no table rows), break
+    if [[ "$OUT" =~ "No resources found" ]]; then
+      # may still find resources for other kinds, check full result set
+      REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+      if [ "$REMAINING" -eq 0 ]; then
+        echo "[INFO] All resources have been cleaned up in namespace 'litellm'. Exiting monitor."
+        break
       fi
-      echo "$key=$obf"
-    else
-      echo "$key=$value"
     fi
+    sleep 5
+    echo "[INFO] Refreshing resource list in namespace 'litellm'..."
   done
+  exit 0
+}
+trap cleanup SIGINT SIGTERM
+
+echo "[INFO] Waiting for litellm pod to be Running before starting log tail..."
+POD=""
+timeout_secs=60
+waited=0
+while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
+  POD=$(kubectl get pods -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+  if [[ -z "$POD" ]]; then
+    sleep 2
+    waited=$((waited + 2))
+  else
+    phase=$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [[ "$phase" == "Running" ]]; then
+      break
+    fi
+    sleep 2
+    waited=$((waited + 2))
+  fi
+  if [ "$waited" -ge "$timeout_secs" ]; then
+    echo "[WARN] Timeout waiting for litellm pod to be Running."
+    break
+  fi
+done
+
+if [[ -n "$POD" ]]; then
+  echo "[INFO] Tailing logs for pod: $POD (Ctrl+C to exit and see resource status)"
+  kubectl logs -f "$POD" -n litellm
 else
-  echo "[WARN] No litellm pods found in cluster after deploy or pod did not start in 60s."
+  echo "[WARN] Could not find a litellm pod to tail logs."
 fi
+
+# After kubectl logs ends, display resource summary automatically
+echo
+echo "[INFO] Entering resource monitoring for namespace 'litellm': will exit only when all resources are gone."
+while true; do
+  OUT=$(kubectl get all,ing,pv,pvc,cm -n litellm 2>&1)
+  echo "$OUT"
+  # Check for presence of any resources (not just 'No resources found', but also body of tables)
+  # If every section shows "No resources found" (or no table rows), break
+  if [[ "$OUT" =~ "No resources found" ]]; then
+    REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+    if [ "$REMAINING" -eq 0 ]; then
+      echo "[INFO] All resources have been cleaned up in namespace 'litellm'. Exiting monitor."
+      break
+    fi
+  fi
+  sleep 5
+  echo "[INFO] Refreshing resource list in namespace 'litellm'..."
+done
+
+exit 0
+  if [[ -n "$POD" ]]; then
+    for key in AZURE_API_BASE AZURE_API_KEY AZURE_API_VERSION PROXY_MASTER_KEY HOST PORT; do
+      value=$(kubectl exec -n litellm "$POD" -- printenv "$key" 2>/dev/null || echo "")
+      if [[ "$key" == *KEY* ]]; then
+        if [ -z "$value" ]; then
+          obf=""
+        else
+          obf="${value:0:3}******"
+        fi
+        echo "$key=$obf"
+      else
+        echo "$key=$value"
+      fi
+    done
+    # Extra: show pod phase and status
+    phase=$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
+    echo "POD: $POD Phase: $phase"
+  else
+    echo "[WARN] No litellm pods found in cluster or pod did not start."
+  fi
+  sleep 10
+done
