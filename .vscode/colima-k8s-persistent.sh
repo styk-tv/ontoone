@@ -1,6 +1,13 @@
 #!/bin/bash
 
 # Colima Kubernetes Persistent Setup Script with Klipper LoadBalancer
+#
+# --- Resources managed via Helmfile (full, unfiltered list) ---
+# Output of: helmfile -f litellm/helmfile.yaml.gotmpl list
+#
+# NAME   	NAMESPACE	ENABLED	INSTALLED	LABELS                                           	CHART                             	VERSION
+# litellm	litellm  	true   	true     	chart:litellm-helm,name:litellm,namespace:litellm	oci://ghcr.io/berriai/litellm-helm	0.1.69
+#
 set -e
 
 LOGFILE="/tmp/colima-k8s-persistent.log"

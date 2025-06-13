@@ -50,7 +50,7 @@
     {
       "label": "11 litellm.onto.one",
       "type": "shell",
-      "command": "sh ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
+      "command": "bash ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
       "problemMatcher": [],
     },
     {
@@ -62,7 +62,7 @@
     {
       "label": "21 milvus.onto.one",
       "type": "shell",
-      "command": "sh ./k8s/start_chart.sh milvus https://zilliztech.github.io/milvus-helm/ milvus 4.1.15",
+      "command": "bash ./k8s/start_chart.sh milvus https://zilliztech.github.io/milvus-helm/ milvus 4.1.15",
       "problemMatcher": [],
       "presentation": {
         "echo": true,

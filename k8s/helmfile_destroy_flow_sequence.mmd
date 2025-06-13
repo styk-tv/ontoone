@@ -1,0 +1,26 @@
+%% Mermaid sequence diagram for Helmfile destruction/monitor state machine
+
+sequenceDiagram
+    participant User
+    participant Script
+    participant Helmfile
+    participant K8s
+    participant Namespace as "Namespace"
+
+    User->>Script: SIGINT (Ctrl+C) or destroy
+    activate Script
+    Script->>Helmfile: helmfile destroy (namespace)
+    Helmfile->>K8s: Deletes resources (excl. PVC/CM)
+    loop Monitor for all except PVC/CM
+        Script->>K8s: Query resource status (excluding PVC/CM)
+        K8s-->>Script: Reports remaining non-PVC/CM resources
+        alt Resources remain
+            Script->>Script: Wait & re-check
+        else All gone
+            deactivate Script
+            Script->>K8s: Query PVCs / ConfigMaps in namespace
+            K8s-->>Script: List of remaining PVC/CM
+            Script->>User: Show final report - PVC/CM left as persistent state
+            Script->>User: Inform: Termination complete
+        end
+    end

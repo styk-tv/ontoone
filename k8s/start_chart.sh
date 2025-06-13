@@ -1,8 +1,28 @@
-#!/bin/bash
+#!/bin/sh
+# If not running under Bash, re-exec under Bash BEFORE any Bash-isms are parsed
+if [ -z "$BASH_VERSION" ]; then
+  if command -v bash >/dev/null 2>&1; then
+    exec bash "$0" "$@"
+    # exec replaces shell. The line below should never run
+    echo "[ERROR] Failed to exec bash, aborting."
+    exit 99
+  else
+    echo "[ERROR] Bash is required for this script. Please install bash and invoke with 'bash ./k8s/start_chart.sh ...'."
+    exit 100
+  fi
+fi
+
 set -e
 
 # --- Minimal, DRY, deterministic .env → pod env Helmfile deploy script ---
 # This script is designed to deploy litellm with all .env values propagated to pod as env variables.
+#
+# --- Resources managed by this script (via Helmfile) ---
+# Output of: helmfile -f litellm/helmfile.yaml.gotmpl list
+#
+# NAME   	NAMESPACE	ENABLED	INSTALLED	LABELS                                           	CHART                             	VERSION
+# litellm	litellm  	true   	true     	chart:litellm-helm,name:litellm,namespace:litellm	oci://ghcr.io/berriai/litellm-helm	0.1.69
+#
 
 # Always in repo root for consistent context (exit on failure)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -49,15 +69,79 @@ if [ "$MISSING" -ne 0 ]; then
   exit 2
 fi
 
+# Check Kubernetes cluster connectivity before proceeding
+if ! kubectl version --request-timeout='6s' &>/dev/null; then
+  echo "[ERROR] Unable to connect to the Kubernetes cluster."
+  echo "Ensure you have Colima Kubernetes running and that it meets all requirements for this deployment."
+  exit 10
+fi
+
 PROJECT_NAME="$1"
 if [ "$PROJECT_NAME" != "litellm" ]; then
   echo "[ERROR] Only 'litellm' project is supported in this mode."
   exit 1
 fi
+# ---- Start: Bash-only Attach Mode (SAFE FOR LEGACY STARTUP) ----
+if [ -n "$BASH_VERSION" ]; then
+  echo "[INFO] (Bash mode) Checking for existing litellm deployment in namespace '$PROJECT_NAME'..."
+  HEALTHY_LITELLM_POD=""
+  mapfile -t PODS < <(kubectl get pods -n "$PROJECT_NAME" -l "app=litellm" --no-headers 2>/dev/null | awk '$3 == "Running" && $2 ~ /^1\/1$/ {print $1}')
+  if [ ${#PODS[@]} -gt 0 ]; then
+    HEALTHY_LITELLM_POD="${PODS[0]}"
+  fi
 
-# Ensure wildcard TLS certificate secret exists in the litellm namespace before deploying
-echo "[INFO] Creating/refreshing wildcard TLS certificate secret in the litellm namespace..."
-"$SCRIPT_DIR/install-wildcard.sh" litellm
+  if [ -n "$HEALTHY_LITELLM_POD" ]; then
+    echo -e "\033[1;32m[INFO]\033[0m Detected a healthy running litellm deployment (pod: $HEALTHY_LITELLM_POD)."
+    echo "[MODE] ATTACH: Attaching to logs for pod '$HEALTHY_LITELLM_POD'."
+    echo "Press Ctrl+C to trigger graceful destruction (delete/release will start and monitor will display)."
+
+    attach_destroy_mode=0
+
+    cleanup_attach() {
+      if [ $attach_destroy_mode -eq 0 ]; then
+        attach_destroy_mode=1
+        echo -e "\\n[MODE] DELETING: Triggering helmfile destroy for litellm. Detaching from logs and starting resource monitoring."
+        # Begin destroy and monitoring
+        helmfile -f litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy
+        # call cleanup from script to use the existing resource monitor/deletion loop
+        cleanup
+      else
+        echo "[INFO] Force exit requested."
+        exit 99
+      fi
+    }
+
+    trap cleanup_attach SIGINT
+
+    # Attach to logs (will exit on signal due to trap)
+    kubectl logs -f "$HEALTHY_LITELLM_POD" -n "$PROJECT_NAME"
+
+    # If logs exit for any reason (e.g., pod gone), check if in cleanup or prompt exit
+    if [ $attach_destroy_mode -eq 0 ]; then
+      echo "[INFO] Log following ended, re-checking pod status."
+      CURRENT_POD_COUNT=$(kubectl get pods -n "$PROJECT_NAME" -l "app=litellm" --no-headers 2>/dev/null | wc -l)
+      if [ "$CURRENT_POD_COUNT" -eq 0 ]; then
+        echo "[INFO] All litellm pods terminated. Exiting."
+        exit 0
+      else
+        echo "[INFO] Pods still exist; you may re-run to attach again or trigger deletion."
+        exit 7
+      fi
+    fi
+    exit 0
+  fi
+fi
+# ---- End Bash-only Attach Mode (SAFE FOR LEGACY STARTUP) ----
+
+# Ensure wildcard TLS certificate secret exists in the target namespace before uninstalling
+echo "[INFO] Refreshing wildcard TLS certificate secret in the '$PROJECT_NAME' namespace (if applicable)..."
+"$SCRIPT_DIR/install-wildcard.sh" "$PROJECT_NAME"
+
+echo -e "\033[1;36m[INFO]\033[0m Attempting to uninstall Helmfile-managed releases for project '$PROJECT_NAME' in namespace '$PROJECT_NAME'..."
+# ==== Restored Deploy Logic (from original, after Bash attach mode) ====
+# Ensure wildcard TLS certificate secret exists in the "$PROJECT_NAME" namespace before deploying
+echo "[INFO] Creating/refreshing wildcard TLS certificate secret in the '$PROJECT_NAME' namespace..."
+"$SCRIPT_DIR/install-wildcard.sh" "$PROJECT_NAME"
 
 echo "[INFO] Applying Helmfile with dynamic .env → pod env mapping for '$PROJECT_NAME'..."
 helmfile -f ./litellm/helmfile.yaml.gotmpl sync
@@ -67,14 +151,13 @@ echo "[INFO] Post-deploy: printing pod environment for key exported variables:"
 POD=""
 timeout_secs=60
 waited=0
-# wait for pod to be Running
-while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
-  POD=$(kubectl get pods -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
+  POD=$(kubectl get pods -n "$PROJECT_NAME" -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
   if [[ -z "$POD" ]]; then
     sleep 2
     waited=$((waited + 2))
   else
-    phase=$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
+    phase=$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
     if [[ "$phase" == "Running" ]]; then
       break
     fi
@@ -82,82 +165,153 @@ while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n litellm "$POD" -o jsonpath='{.
     waited=$((waited + 2))
   fi
   if [ "$waited" -ge "$timeout_secs" ]; then
-    echo "[WARN] Timeout waiting for litellm pod to be Running."
-    break
-  fi
-done
-cleanup() {
-  echo
-  echo "[INFO] Received exit signal, displaying Kubernetes resource status for troubleshooting..."
-  echo
-  echo "[INFO] Entering resource monitoring for namespace 'litellm': will exit only when all resources are gone."
-  while true; do
-    OUT=$(kubectl get all,ing,pv,pvc,cm -n litellm 2>&1)
-    echo "$OUT"
-    # Check for presence of any resources (not just 'No resources found', but also body of tables)
-    # If every section shows "No resources found" (or no table rows), break
-    if [[ "$OUT" =~ "No resources found" ]]; then
-      # may still find resources for other kinds, check full result set
-      REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
-      if [ "$REMAINING" -eq 0 ]; then
-        echo "[INFO] All resources have been cleaned up in namespace 'litellm'. Exiting monitor."
-        break
-      fi
-    fi
-    sleep 5
-    echo "[INFO] Refreshing resource list in namespace 'litellm'..."
-  done
-  exit 0
-}
-trap cleanup SIGINT SIGTERM
-
-echo "[INFO] Waiting for litellm pod to be Running before starting log tail..."
-POD=""
-timeout_secs=60
-waited=0
-while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
-  POD=$(kubectl get pods -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-  if [[ -z "$POD" ]]; then
-    sleep 2
-    waited=$((waited + 2))
-  else
-    phase=$(kubectl get pod -n litellm "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
-    if [[ "$phase" == "Running" ]]; then
-      break
-    fi
-    sleep 2
-    waited=$((waited + 2))
-  fi
-  if [ "$waited" -ge "$timeout_secs" ]; then
-    echo "[WARN] Timeout waiting for litellm pod to be Running."
+    echo "[WARN] Timeout waiting for $PROJECT_NAME pod to be Running."
     break
   fi
 done
 
 if [[ -n "$POD" ]]; then
-  echo "[INFO] Tailing logs for pod: $POD (Ctrl+C to exit and see resource status)"
-  kubectl logs -f "$POD" -n litellm
+  echo "[INFO] Tailing logs for pod: $POD (Ctrl+C to terminate, destruction & cleanup monitoring will begin)"
+  tail_pid=""
+  sigint_received=0
+
+  tail_and_monitor() {
+    kubectl logs -f "$POD" -n "$PROJECT_NAME" &
+    tail_pid=$!
+    wait $tail_pid
+    # When logs process ends (or is killed), continue
+  }
+
+  perform_full_cleanup() {
+    if [ $sigint_received -eq 0 ]; then
+      sigint_received=1
+      if [[ -n "$tail_pid" ]]; then
+        echo "[INFO] Killing log process..."
+        kill "$tail_pid" 2>/dev/null || true
+        wait "$tail_pid" 2>/dev/null || true
+      fi
+      echo "[DESTRUCTION] Initiating Helmfile destroy for '$PROJECT_NAME'..."
+      helmfile -f ./litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy || true
+      echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
+      while true; do
+        OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
+        echo "$OUT"
+        if [[ "$OUT" =~ "No resources found" ]]; then
+          REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+          if [ "$REMAINING" -eq 0 ]; then
+            echo "[INFO] All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
+            break
+          fi
+        fi
+        sleep 5
+        echo "[INFO] Refreshing resource list in namespace '$PROJECT_NAME'..."
+      done
+      echo ""
+      echo "========== FINAL REPORT: Persistent Kubernetes Resources =========="
+      echo "Helmfile uninstall completed. The following PVCs remain (persistent state, not auto-deleted):"
+      kubectl get pvc -n "$PROJECT_NAME"
+      echo ""
+      echo "The following ConfigMaps remain:"
+      kubectl get configmap -n "$PROJECT_NAME"
+      echo "========== END OF FINAL REPORT =========="
+      exit 0
+    fi
+  }
+
+  trap perform_full_cleanup SIGINT
+
+  tail_and_monitor
+
+  if [ $sigint_received -eq 0 ]; then
+    echo "[INFO] kubectl logs exited normally, no termination requested."
+  fi
 else
-  echo "[WARN] Could not find a litellm pod to tail logs."
+  echo "[WARN] Could not find a $PROJECT_NAME pod to tail logs."
 fi
 
 # After kubectl logs ends, display resource summary automatically
 echo
-echo "[INFO] Entering resource monitoring for namespace 'litellm': will exit only when all resources are gone."
+
+perform_full_cleanup() {
+  echo "[DESTRUCTION] Initiating Helmfile destroy for '$PROJECT_NAME'..."
+  helmfile -f ./litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy || true
+  echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
+  while true; do
+    OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
+    echo "$OUT"
+    if [[ "$OUT" =~ "No resources found" ]]; then
+      REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+      if [ "$REMAINING" -eq 0 ]; then
+        echo "[INFO] All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
+        break
+      fi
+    fi
+    sleep 5
+    echo "[INFO] Refreshing resource list in namespace '$PROJECT_NAME'..."
+  done
+  exit 0
+}
+
+trap perform_full_cleanup SIGINT
+
+echo "[INFO] Entering resource monitoring for namespace '$PROJECT_NAME': will exit only when all resources are gone."
 while true; do
-  OUT=$(kubectl get all,ing,pv,pvc,cm -n litellm 2>&1)
+  OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
   echo "$OUT"
-  # Check for presence of any resources (not just 'No resources found', but also body of tables)
-  # If every section shows "No resources found" (or no table rows), break
   if [[ "$OUT" =~ "No resources found" ]]; then
     REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
     if [ "$REMAINING" -eq 0 ]; then
-      echo "[INFO] All resources have been cleaned up in namespace 'litellm'. Exiting monitor."
+      echo "[INFO] All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
       break
     fi
   fi
   sleep 5
-  echo "[INFO] Refreshing resource list in namespace 'litellm'..."
+  echo "[INFO] Refreshing resource list in namespace '$PROJECT_NAME'..."
+done
+
+exit 0
+# ==== End Restored Deploy Logic ====
+if helmfile -f litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy; then
+  echo -e "\033[1;32m[SUCCESS]\033[0m Helmfile destroy complete for namespace '$PROJECT_NAME'."
+else
+  echo -e "\033[1;31m[FAILED]\033[0m Helmfile destroy returned a non-zero exit status for namespace '$PROJECT_NAME'."
+fi
+
+cleanup() {
+  echo
+  echo -e "\033[1;33m[INFO]\033[0m Received exit signal, displaying Kubernetes resource status for troubleshooting..."
+  echo
+  echo -e "\033[1;33m[INFO]\033[0m Entering resource monitoring for namespace '$PROJECT_NAME': will exit only when all resources are gone."
+  while true; do
+    OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
+    echo -e "$OUT"
+    if [[ "$OUT" =~ "No resources found" ]]; then
+      REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+      if [ "$REMAINING" -eq 0 ]; then
+        echo -e "\033[1;32m[INFO]\033[0m All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
+        break
+      fi
+    fi
+    sleep 5
+    echo -e "\033[1;36m[INFO]\033[0m Refreshing resource list in namespace '$PROJECT_NAME'..."
+  done
+  exit 0
+}
+trap cleanup SIGINT SIGTERM
+
+echo -e "\033[1;36m[INFO]\033[0m Monitoring resource cleanup in namespace '$PROJECT_NAME' after uninstall..."
+while true; do
+  OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
+  echo -e "$OUT"
+  if [[ "$OUT" =~ "No resources found" ]]; then
+    REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
+    if [ "$REMAINING" -eq 0 ]; then
+      echo -e "\033[1;32m[INFO]\033[0m All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
+      break
+    fi
+  fi
+  sleep 5
+  echo -e "\033[1;36m[INFO]\033[0m Refreshing resource list in namespace '$PROJECT_NAME'..."
 done
 
 exit 0
