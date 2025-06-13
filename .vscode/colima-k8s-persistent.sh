@@ -8,22 +8,16 @@ if [ -f "$LOGFILE" ]; then
     mv "$LOGFILE" "$LOGFILE.bak"
 fi
 
-# Load .env from workspace root if present
-ENV_PATH="$(cd "$(dirname "$0")/.." && pwd)/.env"
-if [ -f "$ENV_PATH" ]; then
-  set -a
-  source "$ENV_PATH"
-  set +a
-fi
+# Extract variables from .env.yaml using yq
+COLIMA_RUNTIME=$(yq '.COLIMA_RUNTIME' .env.yaml)
+K8S_POD_STORAGE_PATH=$(yq '.K8S_POD_STORAGE_PATH' .env.yaml)
+COLIMA_MEMORY=$(yq '.COLIMA_MEMORY' .env.yaml)
 
-echo "Colima runtime: ${COLIMA_RUNTIME:-containerd}"
+echo "Colima runtime: $COLIMA_RUNTIME"
 
 # Define your host path for the shared storage
-# Use K8S_POD_STORAGE_PATH from .env, expand ~ to home if present
-if [[ -z "$K8S_POD_STORAGE_PATH" ]]; then
-  echo "K8S_POD_STORAGE_PATH is not set. Please set it in your .env file."
-  echo "K8S_POD_STORAGE_PATH is not set."
-  echo "Please copy .env.example to .env in the project root and set the required values."
+if [[ -z "$K8S_POD_STORAGE_PATH" || "$K8S_POD_STORAGE_PATH" == "null" ]]; then
+  echo "K8S_POD_STORAGE_PATH is not set. Please set it in .env.yaml."
   exit 1
 fi
 if [[ "$K8S_POD_STORAGE_PATH" == ~* ]]; then

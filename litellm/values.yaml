@@ -3,9 +3,16 @@ proxy_config:
     - model_name: gpt-4.1
       litellm_params:
         model: azure/gpt-4.1
-        api_base: "https://peter-8888-resource.cognitiveservices.azure.com/"
-        api_key: ""
-        api_version: "2024-12-01-preview"
+        api_base: os.environ/OPENAI_AZURE_ENDPOINT
+        api_key: os.environ/API_KEY_OPENAI_AZURE
+        api_version: os.environ/OPENAI_API_VERSION
+        api_type: os.environ/OPENAI_API_TYPE
+
+db:
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 10Gi
 
 ingress:
   enabled: true
@@ -21,8 +28,8 @@ ingress:
 
 extraEnv:
   - name: LITELLM_MASTER_KEY
-    value: ""
+    value: os.environ/LITELLM_MASTER_KEY
   - name: UI_USERNAME
-    value: ""
+    value: os.environ/UI_USERNAME
   - name: UI_PASSWORD
-    value: ""
+    value: os.environ/UI_PASSWORD

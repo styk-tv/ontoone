@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# --- Optionally load environment variables from .env file in repo root ---
+if [ -f ".env" ]; then
+    echo "Loading environment variables from .env"
+    set -a
+    source .env
+    set +a
+fi
+
 # This script is designed to manage the lifecycle of a Helm chart, including
 # installation/upgrade and graceful shutdown upon receiving termination signals.
 # It supports two modes of operation:
@@ -28,12 +36,14 @@ HELM_CHART_VERSION=""
 if [ "$#" -eq 1 ]; then
     # Local chart deployment (only project name provided)
     CHART_SOURCE_TYPE="local"
+    NAMESPACE="$PROJECT_NAME"
 elif [ "$#" -eq 4 ]; then
     # Remote chart deployment (project name + repo URL + chart name + chart version)
     CHART_SOURCE_TYPE="remote"
     HELM_REPO_URL="$2"
     HELM_CHART_NAME="$3"
     HELM_CHART_VERSION="$4"
+    NAMESPACE="$PROJECT_NAME"
 else
     echo "Error: Invalid number of arguments."
     echo "Usage for local chart: $0 <project_name>"
@@ -52,6 +62,142 @@ REPO_ROOT=$(dirname "$SCRIPT_DIR")
 cd "$REPO_ROOT" || { echo "Error: Could not change to repository root: $REPO_ROOT"; exit 1; }
 
 echo "Current working directory (after changing to repo root): $(pwd)"
+
+# --- Determine K8S_ENV setting (prefer env, then .env, then fallback) ---
+if [ -z "$K8S_ENV" ]; then
+    export K8S_ENV="dev"
+    echo "K8S_ENV not set, defaulting to 'dev'"
+fi
+
+# --- Handle Chart Source: local+Helmfile vs remote OCI ---
+HELMFILE_ENV="default"
+HELMFILE_PATH="./${PROJECT_NAME}/helmfile.yaml"
+HELMFILE_TEMPLATE_PATH="./${PROJECT_NAME}/helmfile.yaml.gotmpl"
+
+if [ "$CHART_SOURCE_TYPE" == "remote" ]; then
+    # Remote chart deployment (e.g., OCI chart)
+    echo "Deploying remote Helm chart using helm (OCI or repo-based)."
+    # This logic matches the original remote path; adjust values as needed
+    VALUES_ARGS="--values .env.yaml"
+    if [ -f "$VALUES_FILE" ]; then
+        echo "Using project-level values file: '$VALUES_FILE'."
+        VALUES_ARGS="$VALUES_ARGS --values \"$VALUES_FILE\""
+    fi
+
+    if [[ "$HELM_REPO_URL" == oci://* ]]; then
+        CHART_REF="$HELM_REPO_URL"
+        RELEASE_NAME="$PROJECT_NAME"
+        # DEBUG
+        echo "[DEBUG] PROJECT_NAME='$PROJECT_NAME' RELEASE_NAME='$RELEASE_NAME' NAMESPACE='$NAMESPACE'"
+        # Ensure namespace exists before deploy (avoid helm bug where --create-namespace sometimes ignored)
+        if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+            echo "[DEBUG] Creating namespace '$NAMESPACE'"
+            kubectl create namespace "$NAMESPACE"
+        fi
+        echo "Deploying OCI Helm chart: '$HELM_CHART_NAME', version: '$HELM_CHART_VERSION' from OCI registry: '$HELM_REPO_URL' to namespace '$NAMESPACE'"
+        helm upgrade --install "$RELEASE_NAME" "$CHART_REF" \
+          --version "$HELM_CHART_VERSION" \
+          --namespace "$NAMESPACE" \
+          --create-namespace \
+          --wait \
+          $VALUES_ARGS
+    else
+        # Classic repo case
+        REPO_ALIAS=$(echo "$HELM_REPO_URL" | sed -e 's|https\?://||' -e 's|[^a-zA-Z0-9]|-|g' | cut -c1-20)
+        if [ -z "$REPO_ALIAS" ]; then REPO_ALIAS="remote-helm-repo"; fi
+        echo "Adding/updating Helm repository '$REPO_ALIAS' at '$HELM_REPO_URL'..."
+        helm repo add "$REPO_ALIAS" "$HELM_REPO_URL" 2>/dev/null || true
+        helm repo update
+        CHART_REF="$REPO_ALIAS/$HELM_CHART_NAME"
+        helm upgrade --install "$RELEASE_NAME" "$CHART_REF" \
+          --version "$HELM_CHART_VERSION" \
+          --namespace "$NAMESPACE" \
+          --create-namespace \
+          --wait \
+          $VALUES_ARGS
+    fi
+    if [ $? -ne 0 ]; then
+        echo "Helm deployment failed for remote chart."
+        exit 1
+    fi
+    echo "Remote Helm deployment completed successfully."
+    # Do NOT exit here; resume to stats/log/monitoring loop (recurrence)
+else
+    # Local chart or Helmfile deployment (use Helmfile if the project supplies it)
+    if [ -f "$HELMFILE_PATH" ] || [ -f "$HELMFILE_TEMPLATE_PATH" ]; then
+        # If Helmfile present for this project, use it for environment-aware install
+        # --- Validate required environment variables for Helmfile template ---
+        REQUIRED_VARS=(
+            # "CHART_REPO_URL"
+            "CHART_NAME"
+            # "CHART_VERSION"
+            # "OPENAI_API_BASE_URLS"
+            # "OPENAI_API_KEY"
+            # "OPENAI_API_VERSION"
+            # "OPENAI_API_TYPE"
+            # "OPENAI_AZURE_ENDPOINT"
+            # "LITELLM_MASTER_KEY"
+            # "UI_USERNAME"
+            # "UI_PASSWORD"
+            # "API_KEY_OPENAI_AZURE"
+        )
+        ENV_ERR=0
+        for _var in "${REQUIRED_VARS[@]}"; do
+          if [ -z "${!_var}" ]; then
+            echo "ERROR: Required environment variable '$_var' is not set. Add it to your .env file or export it before running."
+            ENV_ERR=1
+          fi
+        done
+        if [ "$ENV_ERR" -ne 0 ]; then
+            echo "At least one required environment variable is missing. Deployment aborted."
+            exit 1
+        fi
+
+        # Only use in-memory rendering of Helmfile Go template; never save secrets to disk!
+        if [ -f "$HELMFILE_PATH" ]; then
+          HELMFILE_USED="$HELMFILE_PATH"
+          echo "Deploying using Helmfile file for $PROJECT_NAME (env: $HELMFILE_ENV, K8S_ENV: $K8S_ENV)..."
+        elif [ -f "$HELMFILE_TEMPLATE_PATH" ]; then
+          HELMFILE_USED="$HELMFILE_TEMPLATE_PATH"
+          echo "Deploying using Helmfile Go-template for $PROJECT_NAME (env: $HELMFILE_ENV, K8S_ENV: $K8S_ENV)..."
+        else
+          echo "ERROR: No valid Helmfile found."
+          exit 1
+        fi
+
+        helmfile -f "$HELMFILE_USED" --environment "$HELMFILE_ENV" apply
+        if [ $? -ne 0 ]; then
+            echo "Helmfile deployment failed."
+            exit 1
+        fi
+        echo "Helmfile deployment completed successfully."
+        exit 0
+    else
+        # Fallback to classic helm if no Helmfile
+        LOCAL_CHART_PATH="./${PROJECT_NAME}/helm"
+        if [ ! -d "$LOCAL_CHART_PATH" ]; then
+            echo "Error: Local Helm chart path '$LOCAL_CHART_PATH' not found for project '$PROJECT_NAME'. Exiting."
+            exit 1
+        fi
+        VALUES_ARGS="--values .env.yaml"
+        if [ -f "$VALUES_FILE" ]; then
+            echo "Using project-level values file: '$VALUES_FILE'."
+            VALUES_ARGS="$VALUES_ARGS --values \"$VALUES_FILE\""
+        fi
+        echo "Deploying local Helm chart from: '$LOCAL_CHART_PATH'"
+        helm upgrade --install "$RELEASE_NAME" "$LOCAL_CHART_PATH" \
+          --namespace "$NAMESPACE" \
+          --create-namespace \
+          --wait \
+          $VALUES_ARGS
+        if [ $? -ne 0 ]; then
+            echo "Helm deployment failed for local chart."
+            exit 1
+        fi
+        echo "Local Helm deployment completed successfully."
+        exit 0
+    fi
+fi
 
 # --- Derive Common Parameters ---
 # For generality, we assume the namespace and release name are the same as the project name.
@@ -152,13 +298,13 @@ fi
 # --- Helm Chart Installation/Upgrade ---
 echo "Proceeding with Helm chart upgrade/installation for release: '$RELEASE_NAME'..."
 
-# Conditional arguments for Helm based on values file presence
-VALUES_ARG=""
+# Compose --values arguments for Helm using .env.yaml and project-level values.yaml
+VALUES_ARGS="--values .env.yaml"
 if [ -f "$VALUES_FILE" ]; then
     echo "Using project-level values file: '$VALUES_FILE'."
-    VALUES_ARG="--values \"$VALUES_FILE\""
+    VALUES_ARGS="$VALUES_ARGS --values \"$VALUES_FILE\""
 else
-    echo "Warning: Project-level values file '$VALUES_FILE' not found. Using values defined within the Helm chart only."
+    echo "Warning: Project-level values file '$VALUES_FILE' not found. Using values defined in .env.yaml and within the Helm chart only."
 fi
 
 if [ "$CHART_SOURCE_TYPE" == "remote" ]; then
@@ -171,7 +317,7 @@ if [ "$CHART_SOURCE_TYPE" == "remote" ]; then
           --namespace "$NAMESPACE" \
           --create-namespace \
           --wait \
-          $VALUES_ARG
+          $VALUES_ARGS
     else
         # Classic repo logic
         # Auto-derive a simple repo name for 'helm repo add'
@@ -193,7 +339,7 @@ if [ "$CHART_SOURCE_TYPE" == "remote" ]; then
           --namespace "$NAMESPACE" \
           --create-namespace \
           --wait \
-          $VALUES_ARG 2>&1)
+          $VALUES_ARGS 2>&1)
         HELM_EXIT_CODE=$?
     fi
 else
@@ -211,7 +357,7 @@ else
       --namespace "$NAMESPACE" \
       --create-namespace \
       --wait \
-      $VALUES_ARG
+      $VALUES_ARGS
 fi
 
 if [ "${HELM_EXIT_CODE:-0}" -ne 0 ]; then

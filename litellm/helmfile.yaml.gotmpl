@@ -1,0 +1,25 @@
+releases:
+  - name: litellm
+    chart: "{{ env "CHART_REPO_URL" }}/{{ env "CHART_NAME" }}"
+    version: "{{ env "CHART_VERSION" }}"
+    values:
+      - values.yaml
+      - proxy_config:
+          model_list:
+            - model_name: gpt-4.1
+              litellm_params:
+                model: "azure/gpt-4.1"
+                api_base: {{ env "OPENAI_API_BASE_URLS" | quote }}
+                api_key: {{ env "OPENAI_API_KEY" | quote }}
+                api_version: {{ env "OPENAI_API_VERSION" | quote }}
+                api_type: {{ env "OPENAI_API_TYPE" | quote }}
+                endpoint: {{ env "OPENAI_AZURE_ENDPOINT" | quote }}
+      - extraEnv:
+          - name: LITELLM_MASTER_KEY
+            value: {{ env "LITELLM_MASTER_KEY" | quote }}
+          - name: UI_USERNAME
+            value: {{ env "UI_USERNAME" | quote }}
+          - name: UI_PASSWORD
+            value: {{ env "UI_PASSWORD" | quote }}
+          - name: API_KEY_OPENAI_AZURE
+            value: {{ env "API_KEY_OPENAI_AZURE" | quote }}

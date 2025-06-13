@@ -75,7 +75,7 @@ extraEnvVars:
   - name: OPENAI_API_KEY
     value: "sk-openai-api-key"
   - name: OPENAI_API_BASE_URLS
-    value: "http://litellm.litellm:4000"    
+    value: "http://litellm.litellm:4000"
   - name: DEFAULT_MODELS
     value: "gpt-4.1"
   - name: MILVUS_URI
