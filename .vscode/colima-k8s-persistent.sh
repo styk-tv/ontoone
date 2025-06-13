@@ -8,10 +8,13 @@ if [ -f "$LOGFILE" ]; then
     mv "$LOGFILE" "$LOGFILE.bak"
 fi
 
-# Extract variables from .env.yaml using yq
-COLIMA_RUNTIME=$(yq '.COLIMA_RUNTIME' .env.yaml)
-K8S_POD_STORAGE_PATH=$(yq '.K8S_POD_STORAGE_PATH' .env.yaml)
-COLIMA_MEMORY=$(yq '.COLIMA_MEMORY' .env.yaml)
+# Load variables from .env (exported)
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
+# Variables from .env are loaded as normal shell variables
 
 echo "Colima runtime: $COLIMA_RUNTIME"
 

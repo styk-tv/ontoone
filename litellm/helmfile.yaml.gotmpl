@@ -1,25 +1,37 @@
 releases:
   - name: litellm
-    chart: "{{ env "CHART_REPO_URL" }}/{{ env "CHART_NAME" }}"
-    version: "{{ env "CHART_VERSION" }}"
+    namespace: litellm
+    chart: oci://ghcr.io/berriai/litellm-helm
+    version: 0.1.694
     values:
-      - values.yaml
+      - ingress:
+          enabled: true
+          hosts:
+            - host: litellm.onto.one
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - litellm.onto.one
+              secretName: wildcard-onto-one
       - proxy_config:
           model_list:
             - model_name: gpt-4.1
               litellm_params:
-                model: "azure/gpt-4.1"
-                api_base: {{ env "OPENAI_API_BASE_URLS" | quote }}
-                api_key: {{ env "OPENAI_API_KEY" | quote }}
-                api_version: {{ env "OPENAI_API_VERSION" | quote }}
-                api_type: {{ env "OPENAI_API_TYPE" | quote }}
-                endpoint: {{ env "OPENAI_AZURE_ENDPOINT" | quote }}
-      - extraEnv:
-          - name: LITELLM_MASTER_KEY
-            value: {{ env "LITELLM_MASTER_KEY" | quote }}
-          - name: UI_USERNAME
-            value: {{ env "UI_USERNAME" | quote }}
-          - name: UI_PASSWORD
-            value: {{ env "UI_PASSWORD" | quote }}
-          - name: API_KEY_OPENAI_AZURE
-            value: {{ env "API_KEY_OPENAI_AZURE" | quote }}
+                model: azure/gpt-4.1
+                api_base: {{ env "AZURE_API_BASE" }}
+                api_key: {{ env "AZURE_API_KEY" }}
+                api_version: {{ env "AZURE_API_VERSION" }}
+          general_settings:
+            master_key: {{ env "PROXY_MASTER_KEY" }}
+      - envVars:
+          AZURE_API_BASE: {{ env "AZURE_API_BASE" }}
+          AZURE_API_KEY: {{ env "AZURE_API_KEY" }}
+          AZURE_API_VERSION: {{ env "AZURE_API_VERSION" }}
+          PROXY_MASTER_KEY: {{ env "PROXY_MASTER_KEY" }}
+      - db:
+          persistence:
+            enabled: true
+            storageClass: local-path
+            size: 10Gi
