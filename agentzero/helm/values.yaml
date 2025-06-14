@@ -12,6 +12,11 @@ resources:
     cpu: "2"
     memory: "4Gi"
 
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 2Gi    
+
 env:
   - name: API_KEY_OPENAI
     value: "sk-..."
