@@ -1,0 +1,28 @@
+releases:
+  - name: agentzero
+    namespace: agentzero
+    chart: ./helm
+    version: 0.0.2
+    values:
+      - ingress:
+          enabled: true
+          hosts:
+            - host: agentzero.onto.one
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - agentzero.onto.one
+              secretName: wildcard-onto-one
+
+      - env:
+          - name: API_KEY_OPENAI
+            value: {{ env "API_KEY_OPENAI_A0" }}
+          - name: OPENAI_API_BASE
+            value: {{ env "OPENAI_API_BASE" }}            
+            
+      - persistence:
+          enabled: true
+          storageClass: local-path
+          size: 10Gi

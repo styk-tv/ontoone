@@ -23,13 +23,13 @@
         "showReuseMessage": false,
         "close": false
       },
-      "group": "build",
+      "group": "build"
     },
     {
       "label": "02 COLIMA EXEC",
       "type": "shell",
       "command": "ssh colima-k8s",
-      "problemMatcher": [],
+      "problemMatcher": []
     },
     {
       "label": "03 CYBER K8S MONITOR",
@@ -45,19 +45,19 @@
         "showReuseMessage": false,
         "close": false
       },
-      "group": "build",
+      "group": "build"
     },
     {
       "label": "11 litellm.onto.one",
       "type": "shell",
       "command": "bash ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
-      "problemMatcher": [],
+      "problemMatcher": []
     },
     {
       "label": "12 litellm.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}') -n litellm -- /bin/sh",
-      "problemMatcher": [],
+      "problemMatcher": []
     },
     {
       "label": "21 milvus.onto.one",
@@ -71,30 +71,30 @@
         "panel": "dedicated",
         "showReuseMessage": false,
         "close": false
-      },
+      }
     },
     {
       "label": "22 milvus.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it  -n milvus -- /bin/sh",
-      "problemMatcher": [],
+      "problemMatcher": []
     },
     {
       "label": "31 openwebui.onto.one",
       "type": "shell",
-      "command": "sh ./k8s/start_chart.sh openwebui https://helm.openwebui.com open-webui 6.19.0",
-      "problemMatcher": [],
+      "command": "bash ./k8s/start_chart.sh openwebui https://helm.openwebui.com open-webui 6.19.0",
+      "problemMatcher": []
     },
     {
       "label": "32 openwebui.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n openwebui -l app.kubernetes.io/component=open-webui -o jsonpath='{.items[0].metadata.name}') -n openwebui -- /bin/bash",
-      "problemMatcher": [],
+      "problemMatcher": []
     },
     {
       "label": "33 mcpo.onto.one",
       "type": "shell",
-      "command": "sh ./k8s/start_chart.sh mcpo",
+      "command": "bash ./k8s/start_chart.sh mcpo",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -102,18 +102,30 @@
         "panel": "dedicated",
         "showReuseMessage": false,
         "close": false
-      },
+      }
     },
     {
       "label": "91 swiss.onto.one",
       "type": "shell",
-      "command": "sh ./k8s/start_chart.sh swiss",
+      "command": "bash ./k8s/start_chart.sh swiss ./swiss/helm swiss 0.0.2",
       "problemMatcher": []
     },
     {
       "label": "92 swiss.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n swiss -l app=swiss -o jsonpath='{.items[0].metadata.name}') -n swiss -- /bin/bash",
+      "problemMatcher": []
+    },
+    {
+      "label": "41 agentzero.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/start_chart.sh agentzero ./agentzero/helm helm 0.0.2",
+      "problemMatcher": []
+    },
+    {
+      "label": "42 agentzero.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n agentzero -l app=agentzero -o jsonpath='{.items[0].metadata.name}') -n agentzero -- /bin/bash",
       "problemMatcher": []
     }
   ]

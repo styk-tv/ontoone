@@ -1,0 +1,32 @@
+releases:
+  - name: swiss
+    namespace: swiss
+    chart: oci://your-registry/swiss-helm
+    version: 002
+    values:
+      - replicaCount: 1
+      - image:
+          repository: leodotcloud/swiss-army-knife
+          tag: latest
+          pullPolicy: IfNotPresent
+      - resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "0.5"
+            memory: "256Mi"
+      - ingress:
+          enabled: true
+          hosts:
+            - host: swiss.onto.one
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - swiss.onto.one
+              secretName: wildcard-onto-one
+      - env:
+          - name: API_KEY_OPENAI
+            value: {{ env "API_KEY_OPENAI_A0" | quote }}

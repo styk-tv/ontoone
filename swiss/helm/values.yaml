@@ -13,11 +13,21 @@ resources:
     cpu: "0.5"
     memory: "256Mi"
 
-env: []
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+containerPort: 80
 
 ingress:
   enabled: true
   hosts:
     - host: swiss.onto.one
+      paths:
+        - path: /
+          pathType: Prefix
   tls:
-    - secretName: wildcard-onto-one
+    - hosts:
+        - swiss.onto.one
+      secretName: wildcard-onto-one

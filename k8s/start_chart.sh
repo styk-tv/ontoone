@@ -77,10 +77,6 @@ if ! kubectl version --request-timeout='6s' &>/dev/null; then
 fi
 
 PROJECT_NAME="$1"
-if [ "$PROJECT_NAME" != "litellm" ]; then
-  echo "[ERROR] Only 'litellm' project is supported in this mode."
-  exit 1
-fi
 # ---- Start: Bash-only Attach Mode (SAFE FOR LEGACY STARTUP) ----
 if [ -n "$BASH_VERSION" ]; then
   echo "[INFO] (Bash mode) Checking for existing litellm deployment in namespace '$PROJECT_NAME'..."
@@ -144,15 +140,18 @@ echo "[INFO] Creating/refreshing wildcard TLS certificate secret in the '$PROJEC
 "$SCRIPT_DIR/install-wildcard.sh" "$PROJECT_NAME"
 
 echo "[INFO] Applying Helmfile with dynamic .env → pod env mapping for '$PROJECT_NAME'..."
-helmfile -f ./litellm/helmfile.yaml.gotmpl sync
+helmfile -f "./$PROJECT_NAME/helmfile.yaml.gotmpl" sync
 
 # Post-deploy check: print actual envVars in the pod for selected keys.
 echo "[INFO] Post-deploy: printing pod environment for key exported variables:"
 POD=""
 timeout_secs=60
 waited=0
+
+# Robust, project-agnostic pod lookup using configurable or auto-inferred label selector:
+LABEL_SELECTOR="${POD_LABEL_SELECTOR:-app=$PROJECT_NAME}"
 while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
-  POD=$(kubectl get pods -n "$PROJECT_NAME" -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+  POD=$(kubectl get pods -n "$PROJECT_NAME" -l app="$PROJECT_NAME" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
   if [[ -z "$POD" ]]; then
     sleep 2
     waited=$((waited + 2))
@@ -171,6 +170,8 @@ while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o json
 done
 
 if [[ -n "$POD" ]]; then
+  echo "[INFO] Printing environment variables for pod: $POD"
+  kubectl exec -n "$PROJECT_NAME" "$POD" -- env || true
   echo "[INFO] Tailing logs for pod: $POD (Ctrl+C to terminate, destruction & cleanup monitoring will begin)"
   tail_pid=""
   sigint_received=0
@@ -191,7 +192,7 @@ if [[ -n "$POD" ]]; then
         wait "$tail_pid" 2>/dev/null || true
       fi
       echo "[DESTRUCTION] Initiating Helmfile destroy for '$PROJECT_NAME'..."
-      helmfile -f ./litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy || true
+      helmfile -f "./$PROJECT_NAME/helmfile.yaml.gotmpl" -n "$PROJECT_NAME" --color destroy || true
       echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
       while true; do
         OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
@@ -234,7 +235,7 @@ echo
 
 perform_full_cleanup() {
   echo "[DESTRUCTION] Initiating Helmfile destroy for '$PROJECT_NAME'..."
-  helmfile -f ./litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy || true
+  helmfile -f "./$PROJECT_NAME/helmfile.yaml.gotmpl" -n "$PROJECT_NAME" --color destroy || true
   echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
   while true; do
     OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
