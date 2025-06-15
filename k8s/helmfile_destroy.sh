@@ -16,9 +16,14 @@ echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' aft
 while true; do
   OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
   echo "$OUT"
-  # Ignore PVCs and ConfigMaps in main deletion check
+
+  # Check if all that is left are configmaps and/or PVCs
   NON_PERSISTING=$(echo "$OUT" | grep -Ev 'No resources found|^NAME|^persistentvolumeclaim|^configmap' | wc -l)
-  if [[ "$OUT" =~ "No resources found" ]] || [[ $NON_PERSISTING -eq 0 ]]; then
+  PVC_OR_CONFIGMAP_LEFT=$(echo "$OUT" | grep -E '^persistentvolumeclaim|^configmap' | wc -l)
+  TOTAL_RESOURCE_LINES=$(echo "$OUT" | grep -Ev '^NAME|No resources found' | wc -l)
+
+  # If only pvc/configmap objects left (or nothing left at all), quit waiting and show final storage/configmap report
+  if [[ "$OUT" =~ "No resources found" ]] || { [[ $NON_PERSISTING -eq 0 ]] && [[ $TOTAL_RESOURCE_LINES -eq $PVC_OR_CONFIGMAP_LEFT ]]; }; then
     if command -v figlet >/dev/null 2>&1; then figlet -f mini "STORAGE INFO"; fi
     echo "[INFO] All non-stateful resources have been cleaned up in namespace '$PROJECT_NAME'. Showing persistent storage and configmaps:"
     kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] No PVC/ConfigMap found."

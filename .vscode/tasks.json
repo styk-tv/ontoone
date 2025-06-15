@@ -50,7 +50,7 @@
     {
       "label": "11 litellm.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh litellm oci://ghcr.io/berriai/litellm-helm litellm-helm 0.1.694",
+      "command": "bash ./k8s/helmfile_start.sh litellm",
       "problemMatcher": []
     },
     {
@@ -62,7 +62,7 @@
     {
       "label": "21 milvus.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh milvus https://zilliztech.github.io/milvus-helm/ milvus 4.1.15",
+      "command": "bash ./k8s/helmfile_start.sh milvus",
       "problemMatcher": [],
       "presentation": {
         "echo": true,
@@ -82,7 +82,7 @@
     {
       "label": "31 openwebui.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh openwebui https://helm.openwebui.com open-webui 6.19.0",
+      "command": "bash ./k8s/helmfile_start.sh openwebui",
       "problemMatcher": []
     },
     {
@@ -94,7 +94,7 @@
     {
       "label": "33 mcpo.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh mcpo",
+      "command": "bash ./k8s/helmfile_start.sh mcpo",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -107,7 +107,7 @@
     {
       "label": "91 swiss.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh swiss ./swiss/helm swiss 0.0.2",
+      "command": "bash ./k8s/helmfile_start.sh swiss",
       "problemMatcher": []
     },
     {
@@ -119,7 +119,7 @@
     {
       "label": "41 agentzero.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/start_chart.sh agentzero ./agentzero/helm helm 0.0.2",
+      "command": "bash ./k8s/helmfile_start.sh agentzero",
       "problemMatcher": []
     },
     {

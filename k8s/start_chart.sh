@@ -112,11 +112,9 @@ if [ -n "$BASH_VERSION" ]; then
     cleanup_attach() {
       if [ $attach_destroy_mode -eq 0 ]; then
         attach_destroy_mode=1
-        echo -e "\\n[MODE] DELETING: Triggering helmfile destroy for litellm. Detaching from logs and starting resource monitoring."
-        # Begin destroy and monitoring
-        helmfile -f litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy
-        # call cleanup from script to use the existing resource monitor/deletion loop
-        cleanup
+        echo -e "\\n[MODE] DELETING: Triggering centralized destruction via helmfile_destroy.sh. Detaching from logs and handing off."
+        bash "$SCRIPT_DIR/helmfile_destroy.sh" "$PROJECT_NAME"
+        exit 130
       else
         echo "[INFO] Force exit requested."
         exit 99
