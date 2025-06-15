@@ -262,13 +262,7 @@ while : ; do
     sleep 2
     waited=$((waited + 2))
   fi
-  if [ "$waited" -ge "$timeout_secs" ]; then
-    echo -ne "\r[ERROR] Timeout: waited $timeout_secs for pod to start. Showing all resources:\n"
-    kubectl get pods -n "$PROJECT_NAME" -o wide || true
-    kubectl get svc,ingress,deploy,sts,job -n "$PROJECT_NAME" 2>/dev/null || true
-    kubectl get events -n "$PROJECT_NAME" --sort-by=.metadata.creationTimestamp | tail -20
-    break
-  fi
+  # Timeout logic removed: wait continues until user sends SIGINT (Ctrl+C)
 done
 
 set +x

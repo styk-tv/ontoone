@@ -1,0 +1,58 @@
+releases:
+  - name: openwebui
+    namespace: openwebui
+    chart: open-webui/open-webui
+    version: 6.19.0
+    labels:
+      app: openwebui
+    values:
+      - ingress:
+          enabled: true
+          class: ""
+          annotations: {}
+          host: openwebui.onto.one
+          additionalHosts: []
+          tls: true
+          existingSecret: wildcard-onto-one
+          extraLabels: {}
+      - persistence:
+          enabled: true
+      - volumes:
+          - name: app-root
+            hostPath:
+              path: /compose/openwebui-openwebui
+              type: DirectoryOrCreate
+      - volumeMounts:
+          mainContainer:
+            - name: app-root
+              mountPath: /app
+          initContainer: []
+      - pipelines:
+          enabled: true
+          persistence:
+            enabled: true
+          volumes:
+            - name: pipelines-root
+              hostPath:
+                path: /compose/openwebui_pipelines
+                type: DirectoryOrCreate
+          volumeMounts:
+            mainContainer:
+              - name: pipelines-root
+                mountPath: /app/pipelines
+            initContainer: []
+      - extraEnvVars:
+          - name: OPENAI_API_KEY
+            value: {{ env "API_KEY_OPENAI_OPENWEBUI" }}
+          - name: OPENAI_API_BASE_URLS
+            value: {{ env "OPENAI_API_BASE_URLS" | default "http://litellm.litellm:4000" }}
+          - name: DEFAULT_MODELS
+            value: {{ env "DEFAULT_MODELS" | default "gpt-4.1" }}
+          - name: MILVUS_URI
+            value: {{ env "MILVUS_URI" | default "http://milvus.milvus:19530" }}
+          - name: MILVUS_TOKEN
+            value: {{ env "MILVUS_TOKEN" | default "" }}
+          - name: MILVUS_DB
+            value: {{ env "MILVUS_DB" | default "default" }}
+          - name: VECTOR_DB
+            value: {{ env "VECTOR_DB" | default "milvus" }}
