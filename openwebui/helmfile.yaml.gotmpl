@@ -17,30 +17,14 @@ releases:
           extraLabels: {}
       - persistence:
           enabled: true
-      - volumes:
-          - name: app-root
-            hostPath:
-              path: /compose/openwebui-openwebui
-              type: DirectoryOrCreate
-      - volumeMounts:
-          mainContainer:
-            - name: app-root
-              mountPath: /app
-          initContainer: []
+          storageClass: local-path
+      # volumes/app-root and volumeMounts/app-root removed; persistence will use PVC via local-path-provisioner
       - pipelines:
           enabled: true
           persistence:
             enabled: true
-          volumes:
-            - name: pipelines-root
-              hostPath:
-                path: /compose/openwebui_pipelines
-                type: DirectoryOrCreate
-          volumeMounts:
-            mainContainer:
-              - name: pipelines-root
-                mountPath: /app/pipelines
-            initContainer: []
+            storageClass: local-path
+          # volumes/pipelines-root and volumeMounts removed; handled by PVC via local-path-provisioner
       - extraEnvVars:
           - name: OPENAI_API_KEY
             value: {{ env "API_KEY_OPENAI_OPENWEBUI" }}
