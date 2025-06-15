@@ -35,7 +35,8 @@ if [[ "$K8S_POD_STORAGE_PATH" == ~* ]]; then
 else
   HOST_COMPOSE_PATH="$K8S_POD_STORAGE_PATH"
 fi
-VM_COMPOSE_PATH="/compose" # This is where it will appear inside the Colima VM
+VM_COMPOSE_PATH="/storage_k8s_pods"
+# VM_COMPOSE_PATH="/var/lib/rancher/k3s/storage" # CHOICE 0, do not delete, keep commented out
 
 # Graceful shutdown handler
 cleanup() {
@@ -78,8 +79,8 @@ setup_ingress_controller() {
     echo '--- Setting up NGINX Ingress Controller ---'
     
     # Check if ingress-nginx namespace exists
-    if ! kubectl get namespace ingress-nginx &>/dev/null; then
-        echo "Installing NGINX Ingress Controller..."
+    if ! helm list -n ingress-nginx | grep -q ingress-nginx; then
+        echo "Installing NGINX Ingress Controller via Helm..."
         
         # Add ingress-nginx helm repo if not already added
         helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 2>/dev/null || true
@@ -98,7 +99,7 @@ setup_ingress_controller() {
             --selector=app.kubernetes.io/component=controller \
             --timeout=300s
     else
-        echo "NGINX Ingress Controller already installed"
+        echo "NGINX Ingress Controller already installed in Helm release state"
     fi
     
     # Display services from all namespaces

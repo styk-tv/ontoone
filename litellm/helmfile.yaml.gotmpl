@@ -24,6 +24,8 @@ releases:
                 api_key: {{ env "AZURE_API_KEY" }}
                 api_version: {{ env "AZURE_API_VERSION" }}
           general_settings:
+            store_model_in_db: true
+            store_prompts_in_spend_logs: true          
             master_key: {{ env "PROXY_MASTER_KEY" }}
       - envVars:
           AZURE_API_BASE: {{ env "AZURE_API_BASE" }}

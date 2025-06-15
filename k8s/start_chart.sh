@@ -1,4 +1,13 @@
 #!/bin/sh
+#
+# NOTE: If you update the destruction/cleanup resource reporting, you MUST also update the documentation
+#       in BOTH k8s/start_chart.md and k8s/helmfile_destroy_flow.md.
+# WHEN MAKING A CHANGE: Clearly request a doc patch to the linked step-logic in both .md files,
+# specifying if logic was INVALIDATED, APPENDED, ADDED or REMOVED.
+#
+# Example:
+#   "Doc update required: resource monitoring loop now prints PVC and ConfigMap on every iteration, not just in the final report. step X in start_chart.md and helmfile_destroy_flow.md MUST be updated/APPENDED accordingly."
+
 # If not running under Bash, re-exec under Bash BEFORE any Bash-isms are parsed
 if [ -z "$BASH_VERSION" ]; then
   if command -v bash >/dev/null 2>&1; then
@@ -13,6 +22,13 @@ if [ -z "$BASH_VERSION" ]; then
 fi
 
 set -e
+
+sigint_destroy () {
+  echo; if command -v figlet >/dev/null 2>&1; then figlet -f mini "SIGINT: DESTROY"; fi
+  bash "$SCRIPT_DIR/helmfile_destroy.sh" "$PROJECT_NAME"
+  exit 130
+}
+trap 'sigint_destroy' SIGINT
 
 # --- Minimal, DRY, deterministic .env → pod env Helmfile deploy script ---
 # This script is designed to deploy litellm with all .env values propagated to pod as env variables.
@@ -149,25 +165,125 @@ timeout_secs=60
 waited=0
 
 # Robust, project-agnostic pod lookup using configurable or auto-inferred label selector:
-LABEL_SELECTOR="${POD_LABEL_SELECTOR:-app=$PROJECT_NAME}"
-while [[ -z "$POD" ]] || [[ "$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)" != "Running" ]]; do
-  POD=$(kubectl get pods -n "$PROJECT_NAME" -l app="$PROJECT_NAME" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+# Use the most robust pod selector based on actual pod label keys
+# Try multiple selectors to find the correct pod label, fallback as needed
+LABEL_SELECTOR="${POD_LABEL_SELECTOR:-app.kubernetes.io/name=$PROJECT_NAME}"
+LABEL_FALLBACK_1="app.kubernetes.io/instance=$PROJECT_NAME"
+LABEL_FALLBACK_2="app=$PROJECT_NAME"
+
+resolve_pod_selector() {
+  local labelsel="$1"
+  local podname
+  podname=$(kubectl get pods -n "$PROJECT_NAME" -l "$labelsel" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  if [[ -n "$podname" ]]; then
+    LABEL_SELECTOR="$labelsel"
+    echo "[DEBUG] Using pod selector: $LABEL_SELECTOR"
+    POD="$podname"
+    return 0
+  fi
+  return 1
+}
+
+POD=""
+if ! resolve_pod_selector "$LABEL_SELECTOR"; then
+  if ! resolve_pod_selector "$LABEL_FALLBACK_1"; then
+    resolve_pod_selector "$LABEL_FALLBACK_2"
+  fi
+fi
+
+# If user didn't override, fallback to common selectors if first fails.
+
+POD_LOOKUP_CMD=(kubectl get pods -n "$PROJECT_NAME" -l "$LABEL_SELECTOR" -o jsonpath='{.items[0].metadata.name}')
+POD_PHASE_CMD=(kubectl get pod -n "$PROJECT_NAME")
+
+set -x
+trap 'last_status=$?;
+if [ "$last_status" = "130" ]; then # SIGINT/Ctrl+C
+  echo "[INFO] SIGINT received, running destruction with helmfile_destroy.sh ..."
+  figlet -f mini "SIGINT: DESTROY"
+  bash "$SCRIPT_DIR/helmfile_destroy.sh" "$PROJECT_NAME"
+  exit 130
+fi
+echo "[TRAP] Script exiting (line: $LINENO) with last status=$last_status"' EXIT
+# Remove ERR trap—do not hard exit on expected pod lookup failure
+
+echo "[DEBUG] PROJECT_NAME='$PROJECT_NAME'"
+echo "[DEBUG] LABEL_SELECTOR='$LABEL_SELECTOR'"
+echo "[DEBUG] timeout_secs='$timeout_secs'"
+echo "[DEBUG] kubectl version:"
+kubectl version --client=true || echo "[ERROR] Failed to get kubectl version"
+set +x   # Disable bash trace before pod wait spinner; keep logs clean in console/CI.
+
+echo "[INFO] Current pods+labels in namespace '$PROJECT_NAME':"
+kubectl get pods -n "$PROJECT_NAME" --show-labels || echo "[WARN] Could not list pods."
+
+echo "[INFO] Waiting up to $timeout_secs seconds for a pod matching '$LABEL_SELECTOR' in namespace '$PROJECT_NAME'..."
+
+waited=0
+POD=""
+last_msg=""
+SPINNER="/-\|"
+spin_idx=0
+firstfound=""
+while : ; do
+  set +e
+  POD=$(kubectl get pods -n "$PROJECT_NAME" -l "$LABEL_SELECTOR" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  set -e
   if [[ -z "$POD" ]]; then
+    spinchar=${SPINNER:spin_idx++%${#SPINNER}:1}
+    echo -ne "\r[WAIT] ${spinchar} Awaiting pods:\n"
+    kubectl get pods -n "$PROJECT_NAME" -o wide 2>/dev/null | tail -n +2 | column -t
+    # Show all other main resources (like kubectl get all) to match destruction display
+    kubectl get svc,ingress,deploy,sts,job -n "$PROJECT_NAME" 2>/dev/null || true
     sleep 2
     waited=$((waited + 2))
   else
-    phase=$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
-    if [[ "$phase" == "Running" ]]; then
+    PHASE=$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+    echo -ne "\r[INFO] Pod: $POD phase: $PHASE                       \n"
+    if [[ -z "$firstfound" ]]; then
+      echo "[INFO] Pod created: $POD. Attempting log tail (regardless of phase)..."
+      firstfound=1
+      # Try to tail logs even in Pending/Init, retry on error every 3s
+      while true; do
+        kubectl logs -f "$POD" -n "$PROJECT_NAME" 2>&1
+        code=$?
+        if [[ $code -eq 0 ]]; then
+          break
+        else
+          echo "[INFO] Pod $POD not yet ready for logs. Re-attempt in 3s..."
+          sleep 3
+        fi
+      done
+    fi
+    if [[ "$PHASE" == "Running" ]]; then
+      echo "[SUCCESS] Pod $POD is Running (after ${waited}s)."
       break
     fi
     sleep 2
     waited=$((waited + 2))
   fi
   if [ "$waited" -ge "$timeout_secs" ]; then
-    echo "[WARN] Timeout waiting for $PROJECT_NAME pod to be Running."
+    echo -ne "\r[ERROR] Timeout: waited $timeout_secs for pod to start. Showing all resources:\n"
+    kubectl get pods -n "$PROJECT_NAME" -o wide || true
+    kubectl get svc,ingress,deploy,sts,job -n "$PROJECT_NAME" 2>/dev/null || true
+    kubectl get events -n "$PROJECT_NAME" --sort-by=.metadata.creationTimestamp | tail -20
     break
   fi
 done
+
+set +x
+
+echo "[INFO] Summary: All pod lookup logs:"
+echo "$all_pod_lookup_logs"
+echo "[INFO] Summary: All pod phase logs:"
+echo "$all_pod_phase_logs"
+
+if [[ -z "$POD" ]]; then
+  echo "[ERROR] No pod was ever found matching selector '$LABEL_SELECTOR' in ns '$PROJECT_NAME'!"
+  echo "[INFO] Fetching recent deployments and pod status in ns '$PROJECT_NAME':"
+  kubectl get pods -n "$PROJECT_NAME" -o wide || echo "[ERROR] Could not list pods"
+  kubectl get events -n "$PROJECT_NAME" --sort-by=.metadata.creationTimestamp | tail -20 || echo "[ERROR] Could not fetch events"
+fi
 
 if [[ -n "$POD" ]]; then
   echo "[INFO] Printing environment variables for pod: $POD"
@@ -176,11 +292,42 @@ if [[ -n "$POD" ]]; then
   tail_pid=""
   sigint_received=0
 
+  # Monitor all resources until only PVCs and ConfigMaps remain
+  monitor_resource_cleanup() {
+    echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
+    while true; do
+      # List all resources except PVC and ConfigMap
+      remaining=$(kubectl api-resources --verbs=list --namespaced -o name | grep -vE '^(persistentvolumeclaims|configmaps)$' \
+        | xargs -I {} kubectl get {} -n "$PROJECT_NAME" --ignore-not-found --no-headers 2>/dev/null | grep -v '^No resources' | wc -l)
+      if [[ "$remaining" -eq 0 ]]; then
+        echo "[INFO] All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
+        break
+      else
+        echo "[INFO] Resources still found in '$PROJECT_NAME' (PVC/ConfigMaps may persist). Waiting..."
+        kubectl get all -n "$PROJECT_NAME"
+        kubectl get pvc,configmap -n "$PROJECT_NAME"
+        sleep 5
+      fi
+    done
+
+    echo "[INFO] Final report of persistent leftovers (PVCs and ConfigMaps):"
+    kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] None found."
+  }
+
   tail_and_monitor() {
-    kubectl logs -f "$POD" -n "$PROJECT_NAME" &
-    tail_pid=$!
-    wait $tail_pid
-    # When logs process ends (or is killed), continue
+    # Trap SIGINT/SIGTERM in this subshell to call cleanup properly
+    trap 'perform_full_cleanup' SIGINT SIGTERM
+    while true; do
+      kubectl logs -f "$POD" -n "$PROJECT_NAME" &
+      tail_pid=$!
+      wait $tail_pid
+      # When log process ends (pod restart or connection drop), briefly wait and re-attach unless SIGINT requested
+      if [[ $sigint_received -eq 1 ]]; then
+        break
+      fi
+      sleep 2
+      echo "[INFO] Lost connection to logs, restarting log tail..."
+    done
   }
 
   perform_full_cleanup() {
@@ -193,31 +340,41 @@ if [[ -n "$POD" ]]; then
       fi
       echo "[DESTRUCTION] Initiating Helmfile destroy for '$PROJECT_NAME'..."
       helmfile -f "./$PROJECT_NAME/helmfile.yaml.gotmpl" -n "$PROJECT_NAME" --color destroy || true
-      echo "[DESTRUCTION] Monitoring resource cleanup in namespace '$PROJECT_NAME' after destroy..."
-      while true; do
-        OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
-        echo "$OUT"
-        if [[ "$OUT" =~ "No resources found" ]]; then
-          REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
-          if [ "$REMAINING" -eq 0 ]; then
-            echo "[INFO] All resources have been cleaned up in namespace '$PROJECT_NAME'. Exiting monitor."
-            break
-          fi
-        fi
-        sleep 5
-        echo "[INFO] Refreshing resource list in namespace '$PROJECT_NAME'..."
-      done
-      echo ""
-      echo "========== FINAL REPORT: Persistent Kubernetes Resources =========="
-      echo "Helmfile uninstall completed. The following PVCs remain (persistent state, not auto-deleted):"
-      kubectl get pvc -n "$PROJECT_NAME"
-      echo ""
-      echo "The following ConfigMaps remain:"
-      kubectl get configmap -n "$PROJECT_NAME"
-      echo "========== END OF FINAL REPORT =========="
+      monitor_resource_cleanup
       exit 0
     fi
   }
+
+  # Trap SIGINT/SIGTERM to ensure cleanup even if log tail hasn't started yet
+  trap 'perform_full_cleanup' SIGINT SIGTERM
+
+  # Immediately tail logs from the main pod when found; if it restarts, re-tail.
+  while true; do
+    echo
+    echo "[INFO] Attaching to logs for pod: $POD (Ctrl+C to terminate and cleanup)"
+    kubectl logs -f "$POD" -n "$PROJECT_NAME"
+    code=$?
+    if [[ $code -eq 0 ]]; then
+      echo "[INFO] Log stream for pod $POD ended normally."
+      # Check if pod still running or restart
+      PHASE=$(kubectl get pod -n "$PROJECT_NAME" "$POD" -o jsonpath='{.status.phase}' 2>/dev/null)
+      if [[ "$PHASE" != "Running" ]]; then
+        echo "[WARN] Pod $POD is no longer Running (phase: $PHASE). Waiting for new pod..."
+        break
+      else
+        echo "[INFO] Pod $POD still running, log tail lost? Reattaching in 2s..."
+        sleep 2
+      fi
+    else
+      echo "[WARN] Log tail failed for pod $POD (code $code), retrying in 2s..."
+      sleep 2
+    fi
+  done
+
+  # Cleanup on end or Ctrl+C
+  perform_full_cleanup
+
+fi  # End if [[ -n "$POD" ]]
 
   trap perform_full_cleanup SIGINT
 
@@ -240,6 +397,7 @@ perform_full_cleanup() {
   while true; do
     OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
     echo "$OUT"
+    kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] No PVC/ConfigMap found."
     if [[ "$OUT" =~ "No resources found" ]]; then
       REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
       if [ "$REMAINING" -eq 0 ]; then
@@ -259,6 +417,7 @@ echo "[INFO] Entering resource monitoring for namespace '$PROJECT_NAME': will ex
 while true; do
   OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
   echo "$OUT"
+  kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] No PVC/ConfigMap found."
   if [[ "$OUT" =~ "No resources found" ]]; then
     REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
     if [ "$REMAINING" -eq 0 ]; then
@@ -286,6 +445,7 @@ cleanup() {
   while true; do
     OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
     echo -e "$OUT"
+    kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] No PVC/ConfigMap found."
     if [[ "$OUT" =~ "No resources found" ]]; then
       REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
       if [ "$REMAINING" -eq 0 ]; then
@@ -304,6 +464,7 @@ echo -e "\033[1;36m[INFO]\033[0m Monitoring resource cleanup in namespace '$PROJ
 while true; do
   OUT=$(kubectl get all,ing -n "$PROJECT_NAME" 2>&1)
   echo -e "$OUT"
+  kubectl get pvc,configmap -n "$PROJECT_NAME" 2>/dev/null || echo "[INFO] No PVC/ConfigMap found."
   if [[ "$OUT" =~ "No resources found" ]]; then
     REMAINING=$(echo "$OUT" | grep -v "No resources found" | grep -v '^$' | grep -v '^NAME' | wc -l)
     if [ "$REMAINING" -eq 0 ]; then
