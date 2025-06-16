@@ -127,6 +127,12 @@
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n agentzero -l app=agentzero -o jsonpath='{.items[0].metadata.name}') -n agentzero -- /bin/bash",
       "problemMatcher": []
+    },
+    {
+      "label": "34 mcpo.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n mcpo -l app=mcpo -o jsonpath='{.items[0].metadata.name}') -n mcpo -- /bin/bash",
+      "problemMatcher": []
     }
   ]
 }

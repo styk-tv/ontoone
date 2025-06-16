@@ -44,3 +44,5 @@ releases:
             value: {{ env "MILVUS_DB" | default "default" }}
           - name: VECTOR_DB
             value: {{ env "VECTOR_DB" | default "milvus" }}
+          - name: PIPELINES_URL
+            value: "http://open-webui-pipelines.openwebui:9099"
