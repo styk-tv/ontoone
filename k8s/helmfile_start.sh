@@ -64,6 +64,8 @@ echo "[PRE-REQ] Refreshing wildcard TLS cert secret in '$PROJECT_NAME' (if appli
 "$SCRIPT_DIR/install-wildcard.sh" "$PROJECT_NAME"
 
 # 4. DEPLOY
+# --- OPTIONAL POST PATCH: look for post-patch.sh in the project directory and run it if found ---
+# --- OPTIONAL POST PATCH: look for post-patch.yaml in the project directory and apply if found ---
 if command -v figlet >/dev/null 2>&1; then
   figlet -f mini "DEPLOY"
 fi

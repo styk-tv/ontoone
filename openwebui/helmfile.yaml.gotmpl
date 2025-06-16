@@ -18,12 +18,16 @@ releases:
       - persistence:
           enabled: true
           storageClass: local-path
+          annotations:
+            helm.sh/resource-policy: keep
       # volumes/app-root and volumeMounts/app-root removed; persistence will use PVC via local-path-provisioner
       - pipelines:
           enabled: true
           persistence:
             enabled: true
             storageClass: local-path
+            annotations:
+              helm.sh/resource-policy: keep
           # volumes/pipelines-root and volumeMounts removed; handled by PVC via local-path-provisioner
       - extraEnvVars:
           - name: OPENAI_API_KEY
