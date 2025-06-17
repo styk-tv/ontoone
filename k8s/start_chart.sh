@@ -112,11 +112,9 @@ if [ -n "$BASH_VERSION" ]; then
     cleanup_attach() {
       if [ $attach_destroy_mode -eq 0 ]; then
         attach_destroy_mode=1
-        echo -e "\\n[MODE] DELETING: Triggering helmfile destroy for litellm. Detaching from logs and starting resource monitoring."
-        # Begin destroy and monitoring
-        helmfile -f litellm/helmfile.yaml.gotmpl -n "$PROJECT_NAME" --color destroy
-        # call cleanup from script to use the existing resource monitor/deletion loop
-        cleanup
+        echo -e "\\n[MODE] DELETING: Triggering centralized destruction via helmfile_destroy.sh. Detaching from logs and handing off."
+        bash "$SCRIPT_DIR/helmfile_destroy.sh" "$PROJECT_NAME"
+        exit 130
       else
         echo "[INFO] Force exit requested."
         exit 99
@@ -262,13 +260,7 @@ while : ; do
     sleep 2
     waited=$((waited + 2))
   fi
-  if [ "$waited" -ge "$timeout_secs" ]; then
-    echo -ne "\r[ERROR] Timeout: waited $timeout_secs for pod to start. Showing all resources:\n"
-    kubectl get pods -n "$PROJECT_NAME" -o wide || true
-    kubectl get svc,ingress,deploy,sts,job -n "$PROJECT_NAME" 2>/dev/null || true
-    kubectl get events -n "$PROJECT_NAME" --sort-by=.metadata.creationTimestamp | tail -20
-    break
-  fi
+  # Timeout logic removed: wait continues until user sends SIGINT (Ctrl+C)
 done
 
 set +x

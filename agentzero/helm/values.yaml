@@ -12,6 +12,18 @@ resources:
     cpu: "2"
     memory: "4Gi"
 
+# IMPORTANT: To ensure persistent data is kept after helm uninstall, use a StorageClass with reclaimPolicy: Retain.
+# For example:
+# ---
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   name: retain-local-path
+# provisioner: rancher.io/local-path
+# reclaimPolicy: Retain
+# volumeBindingMode: WaitForFirstConsumer
+# ---
+# Then set persistence.storageClass: retain-local-path
 persistence:
   enabled: true
   storageClass: local-path
