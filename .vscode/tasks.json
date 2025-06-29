@@ -135,7 +135,7 @@
       "problemMatcher": []
     },
     {
-      "label": "kroki.onto.one",
+      "label": "51 kroki.onto.one",
       "type": "shell",
       "command": "helmfile -f ./kroki/Helmfile.yaml apply",
       "options": {
@@ -144,7 +144,7 @@
       "problemMatcher": []
     },
     {
-      "label": "kroki.onto.one EXEC",
+      "label": "52 kroki.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it -n kroki $(kubectl get pods -n kroki -l app.kubernetes.io/name=kroki -o jsonpath='{.items[0].metadata.name}') -- /bin/sh",
       "options": {
@@ -153,7 +153,7 @@
       "problemMatcher": []
     },
     {
-      "label": "neo4j.onto.one",
+      "label": "61 neo4j.onto.one",
       "type": "shell",
       "command": "helmfile -f ./neo4j/Helmfile.yaml apply",
       "options": {
@@ -162,7 +162,7 @@
       "problemMatcher": []
     },
     {
-      "label": "neo4j.onto.one EXEC",
+      "label": "62 neo4j.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it -n neo4j $(kubectl get pods -n neo4j -l app.kubernetes.io/name=neo4j -o jsonpath='{.items[0].metadata.name}') -- /bin/bash",
       "options": {
