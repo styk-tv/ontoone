@@ -137,7 +137,7 @@
     {
       "label": "51 kroki.onto.one",
       "type": "shell",
-      "command": "helmfile -f ./kroki/Helmfile.yaml apply",
+      "command": "./k8s/helmfile_start.sh kroki",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -155,7 +155,7 @@
     {
       "label": "61 neo4j.onto.one",
       "type": "shell",
-      "command": "helmfile -f ./neo4j/Helmfile.yaml apply",
+      "command": "./k8s/helmfile_start.sh neo4j",
       "options": {
         "cwd": "${workspaceFolder}"
       },
