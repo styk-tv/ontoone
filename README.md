@@ -184,3 +184,16 @@ Creating a new service called `milvus` will:
 **Breadcrumb:** Home (README.md)
 
 [Next: TASKS.md →](TASKS.md)
+
+## Required Helm Repositories
+
+| Repo Name    | URL                                      | Used For         |
+|--------------|-------------------------------------------|------------------|
+| cowboysysop  | https://cowboysysop.github.io/charts/     | Kroki Helm chart |
+
+**Before running any Helmfile commands, add the required repos:**
+
+```sh
+helm repo add cowboysysop https://cowboysysop.github.io/charts/
+helm repo update
+```
