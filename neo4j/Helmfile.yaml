@@ -16,8 +16,3 @@ releases:
           edition: "community"
           name: "neo4j"
           password: "yourStrongPassword"
-      # For TLS, you can use the https/publicCertificate fields as shown below:
-      # https:
-      #   publicCertificate:
-      #     secretName: neo4j-tls
-      #     subPath: public.crt
