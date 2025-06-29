@@ -133,6 +133,42 @@
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n mcpo -l app=mcpo -o jsonpath='{.items[0].metadata.name}') -n mcpo -- /bin/bash",
       "problemMatcher": []
+    },
+    {
+      "label": "kroki.onto.one",
+      "type": "shell",
+      "command": "helmfile -f ./kroki/Helmfile.yaml apply",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "kroki.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it -n kroki $(kubectl get pods -n kroki -l app.kubernetes.io/name=kroki -o jsonpath='{.items[0].metadata.name}') -- /bin/sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "neo4j.onto.one",
+      "type": "shell",
+      "command": "helmfile -f ./neo4j/Helmfile.yaml apply",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "neo4j.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it -n neo4j $(kubectl get pods -n neo4j -l app.kubernetes.io/name=neo4j -o jsonpath='{.items[0].metadata.name}') -- /bin/bash",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }
