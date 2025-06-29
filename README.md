@@ -187,16 +187,19 @@ Creating a new service called `milvus` will:
 
 
 
+
+
 ## Required Helm Repositories
 
 | Repo Name    | URL                                      | Used For         |
 |--------------|-------------------------------------------|------------------|
 | cowboysysop  | https://cowboysysop.github.io/charts/     | Kroki Helm chart |
-| (local)      | ./neo4j-helm-charts/neo4j                 | Neo4j Helm chart (local, no repo add needed) |
+| neo4j        | https://helm.neo4j.com/neo4j              | Neo4j Helm chart |
 
 **Before running any Helmfile commands, add the required repos:**
 
 ```sh
 helm repo add cowboysysop https://cowboysysop.github.io/charts/
+helm repo add neo4j https://helm.neo4j.com/neo4j
 helm repo update
 ```
