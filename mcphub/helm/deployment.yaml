@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcphub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcphub
+  template:
+    metadata:
+      labels:
+        app: mcphub
+    spec:
+      containers:
+        - name: mcphub
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: mcp-config
+              mountPath: /app/mcp_settings.json
+              subPath: mcp_settings.json
+      volumes:
+        - name: mcp-config
+          configMap:
+            name: mcphub-config
