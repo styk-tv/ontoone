@@ -22,15 +22,13 @@ spec:
         - name: mcphub
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: {{- toYaml .Values.container.command | nindent 12 }}
-          args: {{- toYaml .Values.container.args | nindent 12 }}
           ports:
             - containerPort: {{ .Values.service.port }}
               name: http
           volumeMounts:
             - name: mcphub-config
-              mountPath: /app/config.json
-              subPath: config.json
+              mountPath: /app/mcp_settings.json
+              subPath: mcp_settings.json
       volumes:
         - name: mcphub-config
           configMap:

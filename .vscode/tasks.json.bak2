@@ -1,0 +1,180 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Test ENV",
+      "type": "shell",
+      "command": "echo $K8S_POD_STORAGE_PATH",
+      "options": {
+        "envFile": "${workspaceFolder}/.env"
+      }
+    },
+    {
+      "label": "01 COLIMA [KUBERNETES] - PERSISTENT",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/colima-k8s-persistent.sh",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      },
+      "group": "build"
+    },
+    {
+      "label": "02 COLIMA EXEC",
+      "type": "shell",
+      "command": "ssh colima-k8s",
+      "problemMatcher": []
+    },
+    {
+      "label": "03 CYBER K8S MONITOR",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/cyber-k8s-logstream.py /tmp/colima-k8s-persistent.log",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      },
+      "group": "build"
+    },
+    {
+      "label": "11 litellm.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/helmfile_start.sh litellm",
+      "problemMatcher": []
+    },
+    {
+      "label": "12 litellm.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n litellm -l app.kubernetes.io/name=litellm -o jsonpath='{.items[0].metadata.name}') -n litellm -- /bin/sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "21 milvus.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/helmfile_start.sh milvus",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      }
+    },
+    {
+      "label": "22 milvus.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it  -n milvus -- /bin/sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "31 openwebui.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/helmfile_start.sh openwebui",
+      "problemMatcher": []
+    },
+    {
+      "label": "32 openwebui.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n openwebui -l app.kubernetes.io/component=open-webui -o jsonpath='{.items[0].metadata.name}') -n openwebui -- /bin/bash",
+      "problemMatcher": []
+    },
+    {
+      "label": "33 mcpo.onto.one",
+      "type": "shell",
+      "command": "bash -c \"./k8s/helmfile_start.sh mcpo\"",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "close": false
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "91 swiss.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/helmfile_start.sh swiss",
+      "problemMatcher": []
+    },
+    {
+      "label": "92 swiss.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n swiss -l app=swiss -o jsonpath='{.items[0].metadata.name}') -n swiss -- /bin/bash",
+      "problemMatcher": []
+    },
+    {
+      "label": "41 agentzero.onto.one",
+      "type": "shell",
+      "command": "bash ./k8s/helmfile_start.sh agentzero",
+      "problemMatcher": []
+    },
+    {
+      "label": "42 agentzero.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n agentzero -l app=agentzero -o jsonpath='{.items[0].metadata.name}') -n agentzero -- /bin/bash",
+      "problemMatcher": []
+    },
+    {
+      "label": "34 mcpo.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it $(kubectl get pod -n mcpo -l app=mcpo -o jsonpath='{.items[0].metadata.name}') -n mcpo -- /bin/bash",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "51 kroki.onto.one",
+      "type": "shell",
+      "command": "bash -c \"./k8s/helmfile_start.sh kroki\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "52 kroki.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it -n kroki $(kubectl get pods -n kroki -l app.kubernetes.io/name=kroki -o jsonpath='{.items[0].metadata.name}') -- /bin/sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "61 neo4j.onto.one",
+      "type": "shell",
+      "command": "bash -c \"./k8s/helmfile_start.sh neo4j\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "62 neo4j.onto.one EXEC",
+      "type": "shell",
+      "command": "kubectl exec -it -n neo4j $(kubectl get pods -n neo4j -l app.kubernetes.io/name=neo4j -o jsonpath='{.items[0].metadata.name}') -- /bin/bash",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

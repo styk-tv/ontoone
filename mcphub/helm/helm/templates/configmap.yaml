@@ -6,5 +6,5 @@ metadata:
     app.kubernetes.io/name: {{ include "mcphub.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 data:
-  config.json: |
-{{ .Values.configJson | indent 4 }}
+  mcp_settings.json: |-
+{{ .Values.configJson | nindent 4 }}
