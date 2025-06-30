@@ -94,7 +94,7 @@
     {
       "label": "33 mcpo.onto.one",
       "type": "shell",
-      "command": "bash ./k8s/helmfile_start.sh mcpo",
+      "command": "bash -c \"./k8s/helmfile_start.sh mcpo\"",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -102,6 +102,9 @@
         "panel": "dedicated",
         "showReuseMessage": false,
         "close": false
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
       }
     },
     {
@@ -132,7 +135,10 @@
       "label": "34 mcpo.onto.one EXEC",
       "type": "shell",
       "command": "kubectl exec -it $(kubectl get pod -n mcpo -l app=mcpo -o jsonpath='{.items[0].metadata.name}') -n mcpo -- /bin/bash",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     },
     {
       "label": "51 kroki.onto.one",
