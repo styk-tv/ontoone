@@ -1,0 +1,31 @@
+configJson: "{\n  \"mcpServers\": {\n    \"memory\": {\n      \"command\": \"npx\"\
+  ,\n      \"args\": [\"-y\", \"@modelcontextprotocol/server-memory\"]\n    },\n \
+  \   \"time\": {\n      \"command\": \"uvx\",\n      \"args\": [\"mcp-server-time\"\
+  , \"--local-timezone=America/New_York\"]\n    },\n    \"context7\": {\n      \"\
+  command\": \"npx\",\n      \"args\": [\"-y\", \"@upstash/context7-mcp\"]\n    },\n\
+  \    \"mcp-cypher\": {\n      \"command\": \"uvx\",\n      \"args\": [\"mcp-neo4j-cypher@0.2.3\"\
+  ],\n      \"env\": {\n        \"NEO4J_DATABASE\": \"neo4j\",\n        \"NEO4J_PASSWORD\"\
+  : \"yourStrongPassword\",\n        \"NEO4J_URL\": \"bolt://localhost:7687\",\n \
+  \       \"NEO4J_USERNAME\": \"neo4j\"\n      }\n    },\n    \"mcp-data-modeling\"\
+  : {\n      \"command\": \"uvx\",\n      \"args\": [\"mcp-neo4j-data-modeling@0.1.1\"\
+  ]\n    }\n  }\n}\n"
+container:
+  args:
+  - --config=/app/config.json
+  - --api-key=top-secret
+  command:
+  - mcphub
+image:
+  pullPolicy: IfNotPresent
+  repository: ghcr.io/open-webui/mcphub
+  tag: main
+ingress:
+  enabled: true
+  existingSecret: wildcard-onto-one
+  host: mcphub.onto.one
+  tls: true
+mcpServers: {}
+service:
+  enabled: true
+  port: 8000
+  type: ClusterIP
