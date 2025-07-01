@@ -26,10 +26,15 @@ spec:
             - containerPort: {{ .Values.service.port }}
               name: http
           volumeMounts:
+            - name: app-persistent
+              mountPath: /app
             - name: mcphub-config
               mountPath: /app/mcp_settings.json
               subPath: mcp_settings.json
       volumes:
+        - name: app-persistent
+          persistentVolumeClaim:
+            claimName: {{ include "mcphub.fullname" . }}-app
         - name: mcphub-config
           configMap:
             name: {{ include "mcphub.fullname" . }}-config

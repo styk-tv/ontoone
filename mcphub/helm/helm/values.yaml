@@ -24,3 +24,10 @@ container:
     - mcphub
   args:
     - --config=/app/mcp_settings.json
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  storageClass: local-path
+
