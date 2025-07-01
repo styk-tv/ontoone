@@ -1,8 +1,95 @@
-# Cyber K8s Launcher
+# OntoOne - Personal GenAI Toolbox
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Discord](https://img.shields.io/badge/Join%20us%20on%20Discord-7289da?logo=discord&logoColor=white)](https://discord.gg/sTbfxV9xyU)
+> **Project Aim:**
+> This repository is a rapid toolbox for running production-grade GenAI systems—built on vendor-maintained charts where possible, and actively supporting smaller projects’ Kubernetes onboarding by contributing integrated charts with ingress, DNS, certificates, and robust deployment strategies. All chart configuration flows from a single point of truth, enabling persistence that lets you safely shut down and restart any workload with full data continuity.
+
+> **VSCode Task Experience:**
+> This project harnesses the native Visual Studio Code Task system, enhanced by a lightweight extension, to deliver one-click "PLAY", "STOP", and activity-feedback controls directly in your editor. Whether launching a chart, monitoring tokens, running evals, or exploring model flows, you execute, observe, and iterate rapidly via familiar icons—saving you measurable time on routine cycles.
 
 <p align="center">
-  <img src=".vscode/img/tasks.png" alt="Cyber K8s Launcher" width="600"/>
+  <img src=".vscode/img/tasks.png" alt="OntoOne - Personal GenAI Toolbox" width="600"/>
 </p>
+---
+
+> **Design/Tested Platform:**
+> Developed and tested on MacBook M-series.
+> **Minimum requirements:** 16GB RAM, 64GB recommended.
+>
+> **Startup Benchmarking:**
+> - Kubernetes (prewarmed): ~30 seconds
+> - LiteLLM Proxy: ~10 seconds
+> - AgentZero: ~30 seconds
+> - Milvus: ~120 seconds (startup + integrity checks)
+
+---
+
+## 🚀 Modular Architecture Overview
+
+This repository provides a plug-and-play Kubernetes AI platform, with each folder below representing a composable module. Use the provided `helmfile_start.sh` scripts  for launching/restarting modules.
+
+### **Repository Modules**
+| Module/Folder | Description & Link to Docs                                       |
+|---------------|-------------------------------------------------------------------|
+| [`agentzero/`](agentzero/)   | Next-gen agent automation (coming soon)            |
+| [`k8s/`](k8s/)               | Orchestration scripts, cluster certificates, domain setup, Helm workflows |
+| [`kroki/`](kroki/)           | Diagram microservice (Kroki) Helm integration      |
+| [`litellm/`](litellm/)       | Versatile LLM API proxy – integrates with OpenWebUI |
+| [`mcphub/`](mcphub/)         | MCP Orchestration UI: hosts/displays MCP server executions, includes web UI for detailed tracking and management of MCPs. |
+| [`mcp-hub/`](mcp-hub/)       | [WIP] CLI tool for hosting MCP servers as REST/OpenAPI services, supports endpoint-driven hot-reload and dynamic parameter updates. |
+| [`mcpo/`](mcpo/)             | AI agent orchestration, flows, graph logic          |
+| [`milvus/`](milvus/)         | Milvus vector DB Helm chart                         |
+| [`neo4j/`](neo4j/)           | Neo4j database integration for graph/data modeling  |
+| [`openwebui/`](openwebui/)   | Chat front-end + UI                                 |
+| [`swiss/`](swiss/)           | Swiss army tools — utility Helm bundle              |
+
+_Note: All images used in documentation are located in [`.vscode/img/`](.vscode/img/)_
+
+---
+
+## Platform & Storage Architecture
+
+- **Platform:** This stack currently runs on macOS only, leveraging [Colima](https://github.com/abiosoft/colima) with its native Rancher K3s (Kubernetes) integration for zero-hassle local clusters.
+- **Helm Philosophy:** All services are deployed using Helm charts. If an official vendor Helm chart exists, it is used as-is wherever possible; overrides are achieved via a thin `helmfile.yaml.gotmpl` without forking or modifying vendor values.yaml—ensuring compatibility and upgrade path.
+- **Storage Layer:** Persistent storage uses Rancher's local storage provisioner. All important persistent volumes (PVCs) reside in `/var/lib/rancher/k3s/storage` inside the Colima VM. For advanced users, this path (and thus all workload data) may be further mapped/mounted to the host filesystem for backup, inspection, or persistence beyond the VM's lifecycle.
+
+---
+
+### Project Architecture
+
+```mermaid
+graph TD
+    Main[OntoOne - Personal GenAI Toolbox]
+    Agentzero[agentzero]
+    MCPHub[mcp-hub]
+    MCPHub2[mcphub]
+    MCPO[mcpo]
+    K8s[k8s]
+    Kroki[kroki]
+    Litellm[litellm]
+    Milvus[milvus]
+    Neo4j[neo4j]
+    Openwebui[openwebui]
+    Swiss[swiss]
+
+    Main-->Agentzero
+    Main-->MCPHub
+    Main-->MCPHub2
+    Main-->MCPO
+    Main-->K8s
+    Main-->Kroki
+    Main-->Litellm
+    Main-->Milvus
+    Main-->Neo4j
+    Main-->Openwebui
+    Main-->Swiss
+    MCPHub2-->Neo4j
+    MCPHub-->Milvus
+    Litellm-->Openwebui
+```
+
+---
 
 **The fastest way to run your own AI stack—on your laptop, with real SSL, real domains, and real power.**
 
@@ -155,7 +242,7 @@ You can destroy Colima, stop all pods, erase and reinstall everything, and your 
   [Task Manager](https://marketplace.visualstudio.com/items?itemName=cnshenj.vscode-task-manager) (`cnshenj.vscode-task-manager`)
 
   <p align="center">
-  <img src=".vscode/img/image.png" alt="Cyber K8s Launcher" width="600"/>
+  <img src=".vscode/img/image.png" alt="OntoOne - Personal GenAI Toolbox" width="600"/>
 </p>
 
 ---
