@@ -11,7 +11,6 @@
 <p align="center">
   <img src=".vscode/img/tasks.png" alt="OntoOne - Personal GenAI Toolbox" width="600"/>
 </p>
----
 
 > **Design/Tested Platform:**
 > Developed and tested on MacBook M-series.
@@ -23,15 +22,12 @@
 > - AgentZero: ~30 seconds
 > - Milvus: ~120 seconds (startup + integrity checks)
 
----
 
 ## 🚀 Modular Architecture Overview
 
 This repository provides a plug-and-play Kubernetes AI platform, with each folder below representing a composable module. Use the provided `helmfile_start.sh` scripts  for launching/restarting modules.
 
 ### **Repository Modules**
-| Module/Folder | Description & Link to Docs                                       |
-|---------------|----------------------------|-------------|
 | Module/Folder | Description & Link to Docs | Chart Origin |
 |---------------|----------------------------|-------------|
 | [`agentzero/`](agentzero/)   | Free and open source autonomous AI agent           | Contrib      |
@@ -66,6 +62,20 @@ _† Charts marked as 'Vendor' are installed directly via `helm repo add ...`; s
 
 - **Platform:** This stack currently runs on macOS only, leveraging [Colima](https://github.com/abiosoft/colima) with its native Rancher K3s (Kubernetes) integration for zero-hassle local clusters.
   Service exposure uses k3s's native [klipper-lb](https://rancher.com/docs/k3s/latest/en/networking/#service-loadbalancer) (klipper-load-balancer), which enables built-in LoadBalancer-type services—no external load balancer needed for local development.
+### Required Helm Repositories
+
+> We strive for consistency: **Repo Folder = Helm Chart Short Name = Namespace** across the stack.
+
+| Chart Name   | Helm Repo URL                                     | Used For                          |
+|--------------|---------------------------------------------------|-----------------------------------|
+| litellm      | https://helm.litellm.ai                           | LLM API Proxy                     |
+| milvus       | https://zilliztech.github.io/milvus-helm          | Vector DB                         |
+| neo4j        | https://helm.neo4j.com/neo4j                      | Graph DB                          |
+| kroki        | https://cowboysysop.github.io/charts              | Kroki diagram microservice        |
+| openwebui    | https://helm.openwebui.com/                       | OpenWebUI chat frontend           |
+
+To install a vendor chart, use:  
+`helm repo add [repo-shortname] [repo-url]`
 - **Helm Philosophy:** All services are deployed using Helm charts. If an official vendor Helm chart exists, it is used as-is wherever possible; overrides are achieved via a thin `helmfile.yaml.gotmpl` without forking or modifying vendor values.yaml—ensuring compatibility and upgrade path.
 - **Storage Layer:** Persistent storage uses Rancher's local storage provisioner. All important persistent volumes (PVCs) reside in `/var/lib/rancher/k3s/storage` inside the Colima VM. For advanced users, this path (and thus all workload data) may be further mapped/mounted to the host filesystem for backup, inspection, or persistence beyond the VM's lifecycle.
 
@@ -80,29 +90,42 @@ graph TD
     MCPHub[mcp-hub]
     MCPHub2[mcphub]
     MCPO[mcpo]
-    K8s[k8s]
     Kroki[kroki]
-    Litellm[litellm]
     Milvus[milvus]
     Neo4j[neo4j]
     Openwebui[openwebui]
     Swiss[swiss]
+    Litellm[litellm]
+    Ollama[Ollama]
+    LMStudio[LM Studio]
+    Azure[Azure OpenAI]
+    OpenAI[OpenAI]
 
     Main-->Agentzero
     Main-->MCPHub
     Main-->MCPHub2
     Main-->MCPO
-    Main-->K8s
     Main-->Kroki
-    Main-->Litellm
     Main-->Milvus
     Main-->Neo4j
     Main-->Openwebui
     Main-->Swiss
-    MCPHub2-->Neo4j
-    MCPHub-->Milvus
-    Litellm-->Openwebui
+    Agentzero-->Litellm
+    MCPHub-->Litellm
+    MCPHub2-->Litellm
+    MCPO-->Litellm
+    Kroki-->Litellm
+    Milvus-->Litellm
+    Neo4j-->Litellm
+    Openwebui-->Litellm
+    Swiss-->Litellm
+    Litellm-->Ollama
+    Litellm-->LMStudio
+    Litellm-->Azure
+    Litellm-->OpenAI
 ```
+
+> **Note:** All modules and tools are served tokens and proxy access by LiteLLM, which acts as the central gateway for language models. LiteLLM provides per-tool usage monitoring and permission filtering. Connections to Ollama, LM Studio, Azure OpenAI, and OpenAI are handled exclusively by LiteLLM.
 
 ---
 
