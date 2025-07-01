@@ -714,3 +714,4 @@ analytics:
     # values can be primary or secondary
     # this field denotes the neo4j instance type either primary or secondary
     name: primary
+

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcphub-config
+  labels:
+    app: mcphub
+    chart: mcphub
+    release: mcphub
+    heritage: Helm
+data:
+  mcp_settings.json: |-
+{{ .Values.jsonconfig | nindent 4 }}

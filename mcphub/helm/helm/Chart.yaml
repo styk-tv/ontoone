@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mcphub
+version: 0.1.0
+description: Custom Helm chart for mcphub
+appVersion: "1.16.0"
+type: application

@@ -141,31 +141,6 @@
       }
     },
     {
-      "label": "35 mcphub.onto.one",
-      "type": "shell",
-      "command": "bash -c \"./k8s/helmfile_start.sh mcphub\"",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "dedicated",
-        "showReuseMessage": false,
-        "close": false
-      },
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
-      "label": "36 mcphub.onto.one EXEC",
-      "type": "shell",
-      "command": "kubectl exec -it $(kubectl get pod -n mcphub -l app=mcphub -o jsonpath='{.items[0].metadata.name}') -n mcphub -- /bin/bash",
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
       "label": "51 kroki.onto.one",
       "type": "shell",
       "command": "bash -c \"./k8s/helmfile_start.sh kroki\"",
