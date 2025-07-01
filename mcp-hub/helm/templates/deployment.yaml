@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-hub
+  template:
+    metadata:
+      labels:
+        app: mcp-hub
+    spec:
+      initContainers:
+        - name: init-mcp-hub
+          image: node:20-slim
+        command: ["sleep", "3600"]
+        command: ["sleep", "3600"]
+          command: ["sleep", "3600"]
+          args:
+            - |
+              set -ex
+              npm install -g mcp-hub
+              mkdir -p /data-mcp/bin /data-mcp/node_modules
+              echo "Copying from /usr/local/bin to /data-mcp/bin"
+              cp /usr/local/bin/* /data-mcp/bin/
+              echo "Copying from /usr/local/lib/node_modules to /data-mcp/node_modules"
+              cp -r /usr/local/lib/node_modules/* /data-mcp/node_modules/
+              if [ ! -f /data-mcp/mcp_settings.json ]; then
+                cp /app/mcp_settings.default.json /data-mcp/mcp_settings.json;
+              fi
+              ls -l /data-mcp/bin
+              ls -l /data-mcp/node_modules
+          volumeMounts:
+            - name: mcp-hub-config-default
+              mountPath: /app/mcp_settings.default.json
+              subPath: mcp_settings.default.json
+            - name: mcp-hub-data
+              mountPath: /data-mcp
+      containers:
+        - name: mcp-hub
+          image: node:20-slim
+        command: ["sleep", "3600"]
+        command: ["sleep", "3600"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: mcp-hub-data
+              mountPath: /data-mcp
+            - name: mcp-hub-config-default
+              mountPath: /app/mcp_settings.default.json
+              subPath: mcp_settings.default.json
+      volumes:
+        - name: mcp-hub-config-default
+          configMap:
+            name: mcp-hub-config-default
+        - name: mcp-hub-data
+          persistentVolumeClaim:
+            claimName: mcp-hub-data
+          configMap:

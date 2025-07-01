@@ -1,9 +1,11 @@
 image:
-  repository: samanhappy/mcphub
-  tag: latest
+  repository: node
+  tag: 20-slim
+  repository: node
+  tag: 20-slim
 service:
   type: ClusterIP
-  port: 3000
+  port: 8000
 jsonconfig: |
   {
     "mcpServers": {
@@ -24,7 +26,7 @@ jsonconfig: |
         "command": "uvx",
         "args": ["mcp-neo4j-cypher@0.2.3"],
         "env": {
-          "NEO4J_SERVER_URL": "bolt://neo4j.neo4j:7687",
+          "NEO4J_SERVER_URL": "bolt://neo4j:7687",
           "NEO4J_USERNAME": "neo4j",
           "NEO4J_PASSWORD": "yourStrongPassword"
         }
