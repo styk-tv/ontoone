@@ -1,7 +1,7 @@
 # Cyber K8s Launcher
 
 <p align="center">
-  <img src=".vscode/img/image1.png" alt="Cyber K8s Launcher" width="600"/>
+  <img src=".vscode/img/tasks.png" alt="Cyber K8s Launcher" width="600"/>
 </p>
 
 **The fastest way to run your own AI stack—on your laptop, with real SSL, real domains, and real power.**
@@ -153,6 +153,10 @@ You can destroy Colima, stop all pods, erase and reinstall everything, and your 
 - The main set of tasks is in `.vscode/tasks.json`.
 - **Required VSCode extension:**  
   [Task Manager](https://marketplace.visualstudio.com/items?itemName=cnshenj.vscode-task-manager) (`cnshenj.vscode-task-manager`)
+
+  <p align="center">
+  <img src=".vscode/img/image.png" alt="Cyber K8s Launcher" width="600"/>
+</p>
 
 ---
 
