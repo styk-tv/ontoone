@@ -31,26 +31,41 @@ This repository provides a plug-and-play Kubernetes AI platform, with each folde
 
 ### **Repository Modules**
 | Module/Folder | Description & Link to Docs                                       |
-|---------------|-------------------------------------------------------------------|
-| [`agentzero/`](agentzero/)   | Next-gen agent automation (coming soon)            |
-| [`k8s/`](k8s/)               | Orchestration scripts, cluster certificates, domain setup, Helm workflows |
-| [`kroki/`](kroki/)           | Diagram microservice (Kroki) Helm integration      |
-| [`litellm/`](litellm/)       | Versatile LLM API proxy – integrates with OpenWebUI |
-| [`mcphub/`](mcphub/)         | MCP Orchestration UI: hosts/displays MCP server executions, includes web UI for detailed tracking and management of MCPs. |
-| [`mcp-hub/`](mcp-hub/)       | [WIP] CLI tool for hosting MCP servers as REST/OpenAPI services, supports endpoint-driven hot-reload and dynamic parameter updates. |
-| [`mcpo/`](mcpo/)             | AI agent orchestration, flows, graph logic          |
-| [`milvus/`](milvus/)         | Milvus vector DB Helm chart                         |
-| [`neo4j/`](neo4j/)           | Neo4j database integration for graph/data modeling  |
-| [`openwebui/`](openwebui/)   | Chat front-end + UI                                 |
-| [`swiss/`](swiss/)           | Swiss army tools — utility Helm bundle              |
+|---------------|----------------------------|-------------|
+| Module/Folder | Description & Link to Docs | Chart Origin |
+|---------------|----------------------------|-------------|
+| [`agentzero/`](agentzero/)   | Free and open source autonomous AI agent           | Contrib      |
+| [`kroki/`](kroki/)           | Diagram microservice (Kroki) Helm integration      | Vendor       |
+| [`litellm/`](litellm/)       | Versatile LLM API proxy – integrates with OpenWebUI | Vendor      |
+| [`mcphub/`](mcphub/)         | MCP Orchestration UI: hosts/displays MCP server executions, includes web UI for detailed tracking and management of MCPs. | Contrib      |
+| [`mcp-hub/`](mcp-hub/)       | [WIP] CLI tool for hosting MCP servers as REST/OpenAPI services, supports endpoint-driven hot-reload and dynamic parameter updates. | [WIP]/Contrib |
+| [`mcpo/`](mcpo/)             | AI agent orchestration, flows, graph logic          | Contrib      |
+| [`milvus/`](milvus/)         | Milvus vector DB Helm chart                         | Vendor       |
+| [`neo4j/`](neo4j/)           | Neo4j database integration for graph/data modeling  | Vendor       |
+| [`openwebui/`](openwebui/)   | Chat front-end + UI                                 | Vendor      |
+| [`swiss/`](swiss/)           | Swiss army tools — utility Helm bundle              | Contrib      |
 
 _Note: All images used in documentation are located in [`.vscode/img/`](.vscode/img/)_
+
+---
+
+_† Charts marked as 'Vendor' are installed directly via `helm repo add ...`; see the 'Required Helm Repositories' section below for details._
+
+---
+
+### Cluster Orchestration & Utilities
+
+| Component           | Description                                                                                                            |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|
+| K8S Launcher        | Binds our single point of truth (central configuration) with the Colima runtime. Presents multi-stage status screens during startup, operation (cycling info), and termination—filtering for clear shutdown confirmation. |
+| Helmfile Launcher   | Launches and manages Helmfile deployments, unified configuration injection, and lifecycle orchestration for all workloads.                                   |
 
 ---
 
 ## Platform & Storage Architecture
 
 - **Platform:** This stack currently runs on macOS only, leveraging [Colima](https://github.com/abiosoft/colima) with its native Rancher K3s (Kubernetes) integration for zero-hassle local clusters.
+  Service exposure uses k3s's native [klipper-lb](https://rancher.com/docs/k3s/latest/en/networking/#service-loadbalancer) (klipper-load-balancer), which enables built-in LoadBalancer-type services—no external load balancer needed for local development.
 - **Helm Philosophy:** All services are deployed using Helm charts. If an official vendor Helm chart exists, it is used as-is wherever possible; overrides are achieved via a thin `helmfile.yaml.gotmpl` without forking or modifying vendor values.yaml—ensuring compatibility and upgrade path.
 - **Storage Layer:** Persistent storage uses Rancher's local storage provisioner. All important persistent volumes (PVCs) reside in `/var/lib/rancher/k3s/storage` inside the Colima VM. For advanced users, this path (and thus all workload data) may be further mapped/mounted to the host filesystem for backup, inspection, or persistence beyond the VM's lifecycle.
 
