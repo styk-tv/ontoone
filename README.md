@@ -62,6 +62,20 @@ _† Charts marked as 'Vendor' are installed directly via `helm repo add ...`; s
 
 - **Platform:** This stack currently runs on macOS only, leveraging [Colima](https://github.com/abiosoft/colima) with its native Rancher K3s (Kubernetes) integration for zero-hassle local clusters.
   Service exposure uses k3s's native [klipper-lb](https://rancher.com/docs/k3s/latest/en/networking/#service-loadbalancer) (klipper-load-balancer), which enables built-in LoadBalancer-type services—no external load balancer needed for local development.
+### Required Helm Repositories
+
+> We strive for consistency: **Repo Folder = Helm Chart Short Name = Namespace** across the stack.
+
+| Chart Name   | Helm Repo URL                                     | Used For                          |
+|--------------|---------------------------------------------------|-----------------------------------|
+| litellm      | https://helm.litellm.ai                           | LLM API Proxy                     |
+| milvus       | https://zilliztech.github.io/milvus-helm          | Vector DB                         |
+| neo4j        | https://helm.neo4j.com/neo4j                      | Graph DB                          |
+| kroki        | https://cowboysysop.github.io/charts              | Kroki diagram microservice        |
+| openwebui    | https://helm.openwebui.com/                       | OpenWebUI chat frontend           |
+
+To install a vendor chart, use:  
+`helm repo add [repo-shortname] [repo-url]`
 - **Helm Philosophy:** All services are deployed using Helm charts. If an official vendor Helm chart exists, it is used as-is wherever possible; overrides are achieved via a thin `helmfile.yaml.gotmpl` without forking or modifying vendor values.yaml—ensuring compatibility and upgrade path.
 - **Storage Layer:** Persistent storage uses Rancher's local storage provisioner. All important persistent volumes (PVCs) reside in `/var/lib/rancher/k3s/storage` inside the Colima VM. For advanced users, this path (and thus all workload data) may be further mapped/mounted to the host filesystem for backup, inspection, or persistence beyond the VM's lifecycle.
 
