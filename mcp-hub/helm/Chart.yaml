@@ -1,0 +1,4 @@
+apiVersion: v2
+name: mcp-hub
+version: 0.1.0
+description: Helm chart for ravitemer/mcp-hub MCP server hub
