@@ -23,6 +23,30 @@ releases:
                 api_base: {{ env "AZURE_API_BASE" }}
                 api_key: {{ env "AZURE_API_KEY" }}
                 api_version: {{ env "AZURE_API_VERSION" }}
+            - model_name: gpt-4.1-mini
+              litellm_params:
+                model: azure/gpt-4.1-mini
+                api_base: {{ env "AZURE_API_BASE" }}
+                api_key: {{ env "AZURE_API_KEY" }}
+                api_version: {{ env "AZURE_API_VERSION" }}
+            - model_name: gpt-4.1-nano
+              litellm_params:
+                model: azure/gpt-4.1-nano
+                api_base: {{ env "AZURE_API_BASE" }}
+                api_key: {{ env "AZURE_API_KEY" }}
+                api_version: {{ env "AZURE_API_VERSION" }}
+            - model_name: text-embedding-ada-002
+              litellm_params:
+                model: azure/text-embedding-ada-002
+                api_base: {{ env "AZURE_API_BASE" }}
+                api_key: {{ env "AZURE_API_KEY" }}
+                api_version: {{ env "AZURE_API_VERSION" }}
+            - model_name: text-embedding-3-small
+              litellm_params:
+                model: azure/text-embedding-3-small
+                api_base: {{ env "AZURE_API_BASE" }}
+                api_key: {{ env "AZURE_API_KEY" }}
+                api_version: {{ env "AZURE_API_VERSION" }}   
           general_settings:
             store_model_in_db: true
             store_prompts_in_spend_logs: true          
