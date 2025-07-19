@@ -46,7 +46,14 @@ releases:
                 model: azure/text-embedding-3-small
                 api_base: {{ env "AZURE_API_BASE" }}
                 api_key: {{ env "AZURE_API_KEY" }}
-                api_version: {{ env "AZURE_API_VERSION" }}   
+                api_version: {{ env "AZURE_API_VERSION" }}
+            - model_name: databricks/claude-3-7-sonnet
+              litellm_params:
+                model: databricks/databricks-claude-3-7-sonnet
+                api_base: https://adb-8888888.8.azuredatabricks.net/serving-endpoints/databricks-claude-3-7-sonnet/invocations
+                api_key: dapi...
+                custom_llm_provider: databricks                
+                 
           general_settings:
             store_model_in_db: true
             store_prompts_in_spend_logs: true          

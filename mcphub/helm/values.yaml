@@ -1,10 +1,12 @@
 image:
   repository: samanhappy/mcphub
   tag: latest
+  pullPolicy: IfNotPresent
 service:
-  type: ClusterIP
+  enabled: true
   port: 3000
-jsonconfig: |
+  type: ClusterIP
+configJson: |
   {
     "mcpServers": {
       "memory": {
@@ -13,25 +15,18 @@ jsonconfig: |
       },
       "time": {
         "command": "uvx",
-        "args": ["mcp-server-time"],
-        "env": {"TIMEZONE": "Europe/Berlin"}
-      },
-      "context7": {
-        "command": "npx",
-        "args": ["-y", "@upstash/context7-mcp"]
-      },
-      "mcp-cypher": {
-        "command": "uvx",
-        "args": ["mcp-neo4j-cypher@0.2.3"],
-        "env": {
-          "NEO4J_SERVER_URL": "bolt://neo4j.neo4j:7687",
-          "NEO4J_USERNAME": "neo4j",
-          "NEO4J_PASSWORD": "yourStrongPassword"
-        }
-      },
-      "mcp-data-modeling": {
-        "command": "uvx",
-        "args": ["mcp-neo4j-data-modeling@0.1.1"]
+        "args": ["mcp-server-time", "--local-timezone=America/New_York"]
       }
     }
   }
+container:
+  command:
+    - mcphub
+  args:
+    - --config=/app/mcp_settings.json
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  storageClass: local-path

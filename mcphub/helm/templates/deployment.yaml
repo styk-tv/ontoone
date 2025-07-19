@@ -18,6 +18,17 @@ spec:
         app.kubernetes.io/name: {{ include "mcphub.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      initContainers:
+        - name: config-copy
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - cp /configsrc/mcp_settings.json /mcp_settings/mcp_settings.json
+          volumeMounts:
+            - name: mcp-config
+              mountPath: /configsrc
+            - name: mcp-settings
+              mountPath: /mcp_settings
       containers:
         - name: mcphub
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -26,10 +37,12 @@ spec:
             - containerPort: {{ .Values.service.port }}
               name: http
           volumeMounts:
-            - name: mcphub-config
-              mountPath: /app/mcp_settings.json
-              subPath: mcp_settings.json
+            - name: mcp-settings
+              mountPath: /mcp_settings
       volumes:
-        - name: mcphub-config
+        - name: mcp-settings
+          persistentVolumeClaim:
+            claimName: '{{ include "mcphub.fullname" . }}-settings-pvc'
+        - name: mcp-config
           configMap:
-            name: {{ include "mcphub.fullname" . }}-config
+            name: '{{ include "mcphub.fullname" . }}-config'

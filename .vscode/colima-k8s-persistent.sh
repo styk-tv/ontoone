@@ -138,7 +138,7 @@ if ! colima status k8s &>/dev/null; then
     echo "Ensured host directory exists: $HOST_COMPOSE_PATH"
 
     # Start Colima with network-address flag for direct IP access and Kubernetes enabled
-    colima start -p 50001:50001 -p 55080:55080 -p 55022:55022 \
+    colima start -p 7474:7474 -p 7687:7687 -p 50001:50001 -p 55080:55080 -p 55022:55022 \
         --profile k8s \
         --runtime "${COLIMA_RUNTIME:-containerd}" \
         --cpu 8 \

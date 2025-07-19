@@ -1,8 +1,6 @@
 image:
   repository: node
   tag: 20-slim
-  repository: node
-  tag: 20-slim
 service:
   type: ClusterIP
   port: 8000
@@ -24,16 +22,16 @@ jsonconfig: |
       },
       "mcp-cypher": {
         "command": "uvx",
-        "args": ["mcp-neo4j-cypher@0.2.3"],
+        "args": ["mcp-neo4j-cypher@latest"],
         "env": {
-          "NEO4J_SERVER_URL": "bolt://neo4j:7687",
+          "NEO4J_SERVER_URL": "bolt://neo4j.neo4j:7687",
           "NEO4J_USERNAME": "neo4j",
-          "NEO4J_PASSWORD": "yourStrongPassword"
+          "NEO4J_PASSWORD": "demodemo"
         }
       },
       "mcp-data-modeling": {
         "command": "uvx",
-        "args": ["mcp-neo4j-data-modeling@0.1.1"]
+        "args": ["mcp-neo4j-data-modeling@latest"]
       }
     }
   }

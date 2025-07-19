@@ -15,9 +15,7 @@ spec:
       initContainers:
         - name: init-mcp-hub
           image: node:20-slim
-        command: ["sleep", "3600"]
-        command: ["sleep", "3600"]
-          command: ["sleep", "3600"]
+          command: ["/bin/sh", "-c"]
           args:
             - |
               set -ex
