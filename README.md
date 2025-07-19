@@ -151,15 +151,15 @@ Just you, your laptop, and a full-featured, self-hosted AI playground—up and r
 
 ## Mini Task Table
 
-| Task Label                  | What it Does                                      |
-|-----------------------------|---------------------------------------------------|
-| 01 COLIMA [KUBERNETES]      | Starts Colima in Kubernetes mode                  |
-| 03 CYBER K8S MONITOR        | Monitors Colima and Kubernetes logs               |
-| 11 litellm.onto.one         | Deploys Litellm Helm chart                        |
-| 21 milvus.onto.one          | Deploys Milvus Helm chart                         |
-| 31 openwebui.onto.one       | Deploys OpenWebUI Helm chart                      |
-| 33 mcpo.onto.one            | Deploys MCPO Helm chart                           |
-| 91 swiss.onto.one           | Deploys Swiss Helm chart                          |
+Task Label                  | What it Does
+----------------------------|---------------------------------------------------
+01 COLIMA [KUBERNETES]      | Starts Colima in Kubernetes mode
+03 CYBER K8S MONITOR        | Monitors Colima and Kubernetes logs
+11 litellm.onto.one         | Deploys Litellm Helm chart
+21 milvus.onto.one          | Deploys Milvus Helm chart
+31 openwebui.onto.one       | Deploys OpenWebUI Helm chart
+33 mcpo.onto.one            | Deploys MCPO Helm chart
+91 swiss.onto.one           | Deploys Swiss Helm chart
 
 _Use the VSCode Task Manager extension to launch these tasks. EXEC tasks (shell access) are available but not listed here._
 

@@ -1,7 +1,7 @@
 
 image:
   repository: frdel/agent-zero-run
-  tag: latest
+  tag: testing
   pullPolicy: Always
 
 resources:

@@ -49,24 +49,25 @@
   "stt_silence_threshold": 0.3,
   "stt_silence_duration": 1000,
   "stt_waiting_timeout": 2000,
-  "mcp_servers": [
-    {
-      "context7": {
-        "command": "npx",
+  "mcp_servers": {
+      "mcp-cypher": {
+        "command": "uvx",
         "args": [
-          "-y",
-          "@upstash/context7-mcp"
+          "mcp-neo4j-cypher@latest"
         ],
-        "server_name": "context7"
+        "env": {
+          "NEO4J_SERVER_URL": "bolt://neo4j.neo4j:7687",
+          "NEO4J_USERNAME": "neo4j",
+          "NEO4J_PASSWORD": "demodemo"
+        }
+      },
+      "mcp-data-modeling": {
+        "command": "uvx",
+        "args": [
+          "mcp-neo4j-data-modeling@latest"
+        ]
       }
     },
-    {
-      "mcphub": {
-        "url": "http://mcphub.mcphub:3000/mcp",
-        "server_name": "mcphub"
-      }
-    }
-  ],
   "mcp_client_init_timeout": 60,
   "mcp_client_tool_timeout": 120,
   "mcp_server_enabled": true,

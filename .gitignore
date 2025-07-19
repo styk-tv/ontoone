@@ -1,3 +1,4 @@
 .env
 .envold
 .DS_Store
+wordpress-mcp.log

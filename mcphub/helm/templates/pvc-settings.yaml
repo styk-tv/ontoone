@@ -2,7 +2,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "mcphub.fullname" . }}-app
+  name: {{ include "mcphub.fullname" . }}-settings-pvc
+  annotations:
+    "helm.sh/resource-policy": keep
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}

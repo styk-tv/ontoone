@@ -13,5 +13,9 @@ releases:
                 storage: 10Gi
       - neo4j:
           edition: "community"
-          name: "neo4j-single"
-          password: "yourStrongPassword"
+          name: "neo4j"
+          password: "demodemo"
+      - services:
+          # A LoadBalancer Service for external Neo4j driver applications and Neo4j Browser
+          neo4j:
+            enabled: false

@@ -222,7 +222,7 @@ services:
 
     spec:
       # Type of service.
-      type: LoadBalancer
+      type: ClusterIP
 
       # in most cloud environments LoadBalancer type will receive an ephemeral public IP address automatically. If you need to specify a static ip here use:
       # loadBalancerIP: ...
@@ -237,7 +237,7 @@ services:
         #name: http
         #nodePort: <your-nodeport>, enabled only when type set to NodePort
       https:
-        enabled: true # Set this to false to remove HTTPS from this service (this does not affect whether https is enabled for the neo4j process)
+        enabled: false # Set this to false to remove HTTPS from this service (this does not affect whether https is enabled for the neo4j process)
         # uncomment to publish http on port 443 (neo4j default is 7473)
         #port: 443
         #targetPort: 7473
