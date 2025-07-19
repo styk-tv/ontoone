@@ -33,12 +33,20 @@ spec:
         - name: mcphub
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - node
+            - dist/index.js
+          args:
+            - --config=/mcp_settings/mcp_settings.json
           ports:
             - containerPort: {{ .Values.service.port }}
               name: http
           volumeMounts:
             - name: mcp-settings
               mountPath: /mcp_settings
+            - name: mcp-settings
+              mountPath: /app/mcp_settings.json
+              subPath: mcp_settings.json
       volumes:
         - name: mcp-settings
           persistentVolumeClaim:
